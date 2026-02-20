@@ -134,6 +134,46 @@
             border: 1px solid #00d4ff;
         }
         
+        /* Movement Indicator */
+        .movement-indicator {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00d4ff;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #00d4ff;
+            pointer-events: none;
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        .movement-emoji {
+            font-size: 1.2rem;
+        }
+        
+        .movement-name {
+            font-weight: 600;
+        }
+        
+        .movement-refresh {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-left: 0.5rem;
+            border-left: 1px solid #333;
+            padding-left: 0.5rem;
+        }
+        
         /* Growth Progress */
         .growth-panel {
             background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
@@ -602,6 +642,10 @@
                     <div class="level-badge" id="levelBadge">LVL <span id="currentLevel">1</span></div>
                     <div class="stage-label" id="stageLabel">👶 Baby</div>
                 </div>
+                <div class="movement-indicator" id="movementIndicator">
+                    <span class="movement-emoji">🧍</span>
+                    <span class="movement-name">Loading...</span>
+                </div>
                 <div class="glow-effect" id="glowEffect"></div>
                 <div class="level-up-overlay" id="levelUpOverlay">
                     <div class="level-up-text">LEVEL UP!</div>
@@ -1042,8 +1086,239 @@
             });
             scene.add(character);
             
+            // Initialize random movement animation
+            initRandomMovement();
+            
             // Initialize environment after character is added
             initEnvironment();
+        }
+        
+        // ============================================
+        // RANDOM MOVEMENT SYSTEM (P0-036)
+        // ============================================
+        
+        let currentMovement = 'idle';
+        let movementStartTime = 0;
+        let movementDuration = 0;
+        let movementParts = {};
+        
+        // 10 Different Movement Types
+        const MOVEMENTS = {
+            idle: {
+                name: 'Idle Stand',
+                emoji: '🧍',
+                duration: 3000,
+                description: 'Default standing pose'
+            },
+            walk: {
+                name: 'Walk Cycle',
+                emoji: '🚶',
+                duration: 4000,
+                description: 'Walking in place'
+            },
+            wave: {
+                name: 'Wave Hello',
+                emoji: '👋',
+                duration: 2000,
+                description: 'Hand wave greeting'
+            },
+            jump: {
+                name: 'Jump',
+                emoji: '⬆️',
+                duration: 1000,
+                description: 'Small hop/bounce'
+            },
+            sit: {
+                name: 'Sit Down',
+                emoji: '🪑',
+                duration: 3000,
+                description: 'Sit then stand up'
+            },
+            spin: {
+                name: 'Spin Around',
+                emoji: '🔄',
+                duration: 2000,
+                description: '360° rotation'
+            },
+            dance: {
+                name: 'Dance',
+                emoji: '💃',
+                duration: 4000,
+                description: 'Simple dance move'
+            },
+            stretch: {
+                name: 'Stretch',
+                emoji: '🙆',
+                duration: 3000,
+                description: 'Morning stretch pose'
+            },
+            celebrate: {
+                name: 'Celebrate',
+                emoji: '🎉',
+                duration: 2000,
+                description: 'Victory pose'
+            },
+            sleepy: {
+                name: 'Sleepy',
+                emoji: '😴',
+                duration: 3000,
+                description: 'Yawn + drowsy'
+            }
+        };
+        
+        function initRandomMovement() {
+            // Store references to character parts for animation
+            if (character) {
+                character.traverse((child) => {
+                    if (child.isMesh) {
+                        // Identify parts by position
+                        if (child.position.y > 0.6) {
+                            movementParts.head = child;
+                        } else if (child.position.y > 0 && child.position.y < 0.5) {
+                            if (child.position.x < -0.2) movementParts.leftArm = child;
+                            else if (child.position.x > 0.2) movementParts.rightArm = child;
+                            else movementParts.body = child;
+                        } else if (child.position.y < 0) {
+                            if (child.position.x < 0) movementParts.leftLeg = child;
+                            else movementParts.rightLeg = child;
+                        }
+                    }
+                });
+            }
+            
+            // Select random movement on load
+            selectRandomMovement();
+            
+            // Update UI
+            updateMovementUI();
+        }
+        
+        function selectRandomMovement() {
+            const keys = Object.keys(MOVEMENTS);
+            const randomKey = keys[Math.floor(Math.random() * keys.length)];
+            currentMovement = randomKey;
+            movementStartTime = clock.getElapsedTime();
+            movementDuration = MOVEMENTS[randomKey].duration / 1000;
+            
+            console.log(`[Random Movement] Selected: ${MOVEMENTS[randomKey].name}`);
+        }
+        
+        function updateMovementUI() {
+            const movement = MOVEMENTS[currentMovement];
+            const movementIndicator = document.getElementById('movementIndicator');
+            if (movementIndicator && movement) {
+                movementIndicator.innerHTML = `
+                    <span class="movement-emoji">${movement.emoji}</span>
+                    <span class="movement-name">${movement.name}</span>
+                    <span class="movement-refresh">🔄 Refresh for new move</span>
+                `;
+            }
+        }
+        
+        function updateCharacterAnimation(elapsedTime) {
+            if (!character) return;
+            
+            const movementTime = elapsedTime - movementStartTime;
+            const t = movementTime / movementDuration;
+            
+            // Reset positions
+            const baseY = -0.5;
+            
+            switch (currentMovement) {
+                case 'idle':
+                    // Gentle breathing
+                    character.position.y = baseY + Math.sin(elapsedTime * 2) * 0.02;
+                    character.rotation.y = Math.sin(elapsedTime * 0.5) * 0.1;
+                    break;
+                    
+                case 'walk':
+                    // Walking in place
+                    character.position.y = baseY + Math.abs(Math.sin(elapsedTime * 8)) * 0.1;
+                    character.rotation.y = Math.sin(elapsedTime * 0.3) * 0.05;
+                    // Leg swing
+                    if (movementParts.leftLeg) {
+                        movementParts.leftLeg.rotation.x = Math.sin(elapsedTime * 8) * 0.3;
+                    }
+                    if (movementParts.rightLeg) {
+                        movementParts.rightLeg.rotation.x = -Math.sin(elapsedTime * 8) * 0.3;
+                    }
+                    break;
+                    
+                case 'wave':
+                    // Wave with right arm
+                    character.position.y = baseY;
+                    if (movementParts.rightArm) {
+                        movementParts.rightArm.rotation.z = Math.PI - 0.5 + Math.sin(elapsedTime * 10) * 0.5;
+                    }
+                    if (movementParts.head) {
+                        movementParts.head.rotation.y = Math.sin(elapsedTime * 2) * 0.2;
+                    }
+                    break;
+                    
+                case 'jump':
+                    // Jump animation
+                    const jumpPhase = (elapsedTime * 3) % 1;
+                    if (jumpPhase < 0.5) {
+                        character.position.y = baseY + Math.sin(jumpPhase * Math.PI) * 0.5;
+                    } else {
+                        character.position.y = baseY;
+                    }
+                    break;
+                    
+                case 'sit':
+                    // Sit down and stand up
+                    const sitPhase = Math.sin(elapsedTime * 1.5);
+                    character.position.y = baseY - Math.max(0, sitPhase * 0.3);
+                    character.scale.y = currentScale * (1 - Math.max(0, sitPhase * 0.2));
+                    break;
+                    
+                case 'spin':
+                    // 360 spin
+                    character.position.y = baseY;
+                    character.rotation.y = elapsedTime * 3;
+                    break;
+                    
+                case 'dance':
+                    // Dance move
+                    character.position.y = baseY + Math.abs(Math.sin(elapsedTime * 6)) * 0.15;
+                    character.rotation.y = Math.sin(elapsedTime * 4) * 0.3;
+                    if (movementParts.leftArm) {
+                        movementParts.leftArm.rotation.z = Math.sin(elapsedTime * 6) * 0.5;
+                    }
+                    if (movementParts.rightArm) {
+                        movementParts.rightArm.rotation.z = -Math.sin(elapsedTime * 6) * 0.5;
+                    }
+                    break;
+                    
+                case 'stretch':
+                    // Stretch
+                    const stretchPhase = Math.sin(elapsedTime * 2);
+                    character.position.y = baseY;
+                    character.scale.y = currentScale * (1 + Math.max(0, stretchPhase * 0.1));
+                    if (movementParts.leftArm && movementParts.rightArm) {
+                        movementParts.leftArm.rotation.z = Math.max(0, stretchPhase) * 0.8;
+                        movementParts.rightArm.rotation.z = -Math.max(0, stretchPhase) * 0.8;
+                    }
+                    break;
+                    
+                case 'celebrate':
+                    // Victory celebration
+                    character.position.y = baseY + Math.abs(Math.sin(elapsedTime * 10)) * 0.2;
+                    if (movementParts.leftArm && movementParts.rightArm) {
+                        movementParts.leftArm.rotation.z = Math.PI - 0.3 + Math.sin(elapsedTime * 10) * 0.2;
+                        movementParts.rightArm.rotation.z = -Math.PI + 0.3 - Math.sin(elapsedTime * 10) * 0.2;
+                    }
+                    break;
+                    
+                case 'sleepy':
+                    // Sleepy/yawn
+                    character.position.y = baseY;
+                    character.rotation.z = Math.sin(elapsedTime) * 0.05;
+                    if (movementParts.head) {
+                        movementParts.head.rotation.x = Math.sin(elapsedTime * 0.5) * 0.2;
+                    }
+                    break;
+            }
         }
         
         // ============================================
@@ -2464,6 +2739,7 @@
             requestAnimationFrame(animate);
             
             const delta = clock.getDelta();
+            const elapsedTime = clock.getElapsedTime();
             
             // Update mixer
             if (mixer) mixer.update(delta);
@@ -2474,10 +2750,9 @@
                 character.scale.set(currentScale, currentScale, currentScale);
             }
             
-            // Idle animation
+            // Random movement animation (replaces idle animation)
             if (character) {
-                character.rotation.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
-                character.position.y = -0.5 + Math.sin(clock.getElapsedTime() * 2) * 0.02;
+                updateCharacterAnimation(elapsedTime);
             }
             
             // Update particles
