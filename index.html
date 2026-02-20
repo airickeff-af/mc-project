@@ -8,6 +8,8 @@
     <title>Mission Control HQ | AI Team Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -68,6 +70,12 @@
             min-height: calc(100vh - 80px);
         }
         
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         /* Character Section */
         .character-section {
             display: flex;
@@ -75,42 +83,30 @@
             gap: 1.5rem;
         }
         
-        #character-canvas {
-            width: 100%;
-            height: 400px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+        .character-container {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
             border: 2px solid #333;
             border-radius: 16px;
-            position: relative;
             overflow: hidden;
+            position: relative;
+            height: 500px;
+        }
+        
+        #character-canvas {
+            width: 100%;
+            height: 100%;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        #character-canvas:hover {
-            border-color: #00d4ff;
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
-        }
-        
-        #character-canvas.leveling-up {
-            animation: levelUpPulse 1s ease-in-out;
-        }
-        
-        @keyframes levelUpPulse {
-            0%, 100% { box-shadow: 0 0 0 rgba(0, 212, 255, 0); }
-            50% { box-shadow: 0 0 60px rgba(0, 212, 255, 0.6); }
         }
         
         .character-overlay {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             pointer-events: none;
-            z-index: 10;
         }
         
         .level-badge {
@@ -121,14 +117,20 @@
             font-weight: 700;
             font-size: 0.9rem;
             box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            animation: pulse 2s infinite;
         }
         
-        .growth-stage {
-            background: rgba(0, 0, 0, 0.6);
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .stage-label {
+            background: rgba(0, 0, 0, 0.7);
             color: #00d4ff;
-            padding: 0.4rem 0.8rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
             border: 1px solid #00d4ff;
         }
         
@@ -154,25 +156,27 @@
         }
         
         .growth-score {
-            color: #888;
-            font-size: 0.85rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            color: #00d4ff;
         }
         
         .progress-container {
-            position: relative;
-            height: 12px;
-            background: #1a1a2e;
-            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            height: 20px;
             overflow: hidden;
-            margin-bottom: 0.5rem;
+            position: relative;
+            border: 1px solid #333;
         }
         
         .progress-bar {
             height: 100%;
             background: linear-gradient(90deg, #00d4ff, #00ff88);
-            border-radius: 6px;
+            border-radius: 10px;
             transition: width 0.5s ease;
             position: relative;
+            overflow: hidden;
         }
         
         .progress-bar::after {
@@ -194,38 +198,98 @@
         .progress-labels {
             display: flex;
             justify-content: space-between;
+            margin-top: 0.5rem;
             font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .level-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            padding: 0 0.5rem;
+        }
+        
+        .level-marker {
+            text-align: center;
+            font-size: 0.7rem;
             color: #666;
+            transition: all 0.3s;
         }
         
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
+        .level-marker.active {
+            color: #00d4ff;
+            transform: scale(1.1);
         }
         
-        .stat-card {
+        .level-marker.completed {
+            color: #00ff88;
+        }
+        
+        .level-marker .marker-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+            margin: 0 auto 0.25rem;
+            border: 2px solid #555;
+            transition: all 0.3s;
+        }
+        
+        .level-marker.active .marker-dot {
+            background: #00d4ff;
+            border-color: #00d4ff;
+            box-shadow: 0 0 10px #00d4ff;
+        }
+        
+        .level-marker.completed .marker-dot {
+            background: #00ff88;
+            border-color: #00ff88;
+        }
+        
+        /* Stats Panel */
+        .stats-panel {
             background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
             border: 1px solid #333;
             border-radius: 12px;
-            padding: 1.25rem;
-            text-align: center;
-            transition: all 0.2s;
+            padding: 1.5rem;
+            margin-top: 1rem;
         }
         
-        .stat-card:hover { border-color: #00d4ff; transform: translateY(-2px); }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
         
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #00d4ff;
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        
+        .stat-item.health { border-color: #ff6b6b; }
+        .stat-item.wealth { border-color: #ffd700; }
+        
+        .stat-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value-large {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2rem;
             margin-bottom: 0.25rem;
         }
         
-        .stat-label {
+        .stat-item.health .stat-value-large { color: #ff6b6b; }
+        .stat-item.wealth .stat-value-large { color: #ffd700; }
+        
+        .stat-label-small {
+            font-size: 0.75rem;
             color: #888;
-            font-size: 0.85rem;
         }
         
         /* Command Center */
@@ -261,7 +325,9 @@
         .card:hover { border-color: #00d4ff; transform: translateY(-2px); }
         
         .card h2 { color: #00d4ff; margin-bottom: 1rem; font-size: 1.1rem; }
+        
         .card p { color: #888; line-height: 1.6; font-size: 0.9rem; }
+        
         .card a {
             display: inline-block;
             margin-top: 1rem;
@@ -270,20 +336,21 @@
             font-weight: 600;
             font-size: 0.9rem;
         }
+        
         .card a:hover { text-decoration: underline; }
         
         .card-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+        
         .card-stat { text-align: center; }
+        
         .card-stat-value { font-size: 1.5rem; font-weight: 700; color: #00d4ff; }
-        .card-stat-label { color: #666; font-size: 0.8rem; }
+        
+        .card-stat-label { color: #666; font-size: 0.75rem; }
         
         /* Character Stats Modal */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.8);
             display: none;
             align-items: center;
@@ -332,73 +399,109 @@
             gap: 0.5rem;
         }
         
-        .stat-row {
+        .character-info {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #333;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
         }
         
-        .stat-row:last-child { border-bottom: none; }
+        .info-label { color: #888; }
+        .info-value { color: #00d4ff; font-weight: 600; }
         
-        .stat-name { color: #888; }
-        .stat-value-text { color: #00d4ff; font-weight: 600; }
+        /* Level Up Animation */
+        .level-up-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 50;
+        }
         
-        /* Level Up Notification */
-        .level-up-toast {
-            position: fixed;
-            top: 100px;
+        .level-up-overlay.active {
+            display: flex;
+            animation: levelUpFlash 1s ease;
+        }
+        
+        @keyframes levelUpFlash {
+            0% { background: transparent; }
+            50% { background: rgba(0, 212, 255, 0.3); }
+            100% { background: transparent; }
+        }
+        
+        .level-up-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.5rem;
+            color: #00d4ff;
+            text-shadow: 0 0 20px #00d4ff, 0 0 40px #00d4ff;
+            animation: levelUpText 1s ease;
+        }
+        
+        @keyframes levelUpText {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 0; }
+        }
+        
+        /* Glow Effect */
+        .glow-effect {
+            position: absolute;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: linear-gradient(135deg, #00d4ff, #00ff88);
-            color: #000;
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.4);
-            z-index: 1001;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.3) 0%, transparent 70%);
+            pointer-events: none;
             opacity: 0;
-            transition: all 0.5s ease;
+            transition: opacity 0.5s;
         }
         
-        .level-up-toast.show {
-            transform: translateX(-50%) translateY(0);
+        .glow-effect.active {
             opacity: 1;
+            animation: glowPulse 2s infinite;
         }
         
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .main-container {
-                grid-template-columns: 1fr;
-            }
-            #character-canvas {
-                height: 300px;
-            }
+        @keyframes glowPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
         }
         
-        @media (max-width: 768px) {
-            .main-container { padding: 1rem; }
-            .dashboard-grid { grid-template-columns: 1fr; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        
+        /* Loading overlay */
         .loading-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 10, 15, 0.8);
+            background: rgba(10, 10, 15, 0.9);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            flex-direction: column;
+            gap: 1rem;
         }
+        
         .loading-overlay.active { display: flex; }
+        
         .loading-spinner {
-            width: 50px; height: 50px;
-            border: 3px solid rgba(0, 212, 255, 0.2);
+            width: 60px; height: 60px;
+            border: 4px solid rgba(0, 212, 255, 0.2);
             border-top-color: #00d4ff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            color: #00d4ff;
+            font-size: 0.9rem;
         }
         
         .error-message {
@@ -410,6 +513,7 @@
             margin-bottom: 1rem;
             display: none;
         }
+        
         .error-message.active { display: block; }
     </style>
 </head>
@@ -432,54 +536,80 @@
     </header>
 
     <div class="main-container">
-        <!-- Character Section -->
+        <!-- Character Section (Left) -->
         <div class="character-section">
-            <div id="character-canvas" onclick="showCharacterStats()">
+            <div class="character-container" id="characterContainer">
+                <canvas id="character-canvas"></canvas>
                 <div class="character-overlay">
-                    <span class="level-badge" id="level-badge">Level 1</span>
-                    <span class="growth-stage" id="growth-stage">Baby</span>
+                    <div class="level-badge" id="levelBadge">LVL <span id="currentLevel">1</span></div>
+                    <div class="stage-label" id="stageLabel">👶 Baby</div>
+                </div>
+                <div class="glow-effect" id="glowEffect"></div>
+                <div class="level-up-overlay" id="levelUpOverlay">
+                    <div class="level-up-text">LEVEL UP!</div>
                 </div>
             </div>
             
+            <!-- Growth Progress -->
             <div class="growth-panel">
                 <div class="growth-header">
-                    <span class="growth-title">📈 Growth Progress</span>
-                    <span class="growth-score" id="growth-score">Score: 0/100</span>
+                    <div class="growth-title">📈 Growth Progress</div>
+                    <div class="growth-score">Score: <span id="growthScore">0</span>/100</div>
                 </div>
                 <div class="progress-container">
-                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                    <div class="progress-bar" id="growthProgress" style="width: 0%"></div>
                 </div>
                 <div class="progress-labels">
                     <span>Baby</span>
-                    <span>Child</span>
-                    <span>Teen</span>
-                    <span>Adult</span>
+                    <span>Next Level</span>
+                </div>
+                <div class="level-markers">
+                    <div class="level-marker active" data-level="1">
+                        <div class="marker-dot"></div>
+                        <div>👶</div>
+                        <div>0%</div>
+                    </div>
+                    <div class="level-marker" data-level="2">
+                        <div class="marker-dot"></div>
+                        <div>🧒</div>
+                        <div>25%</div>
+                    </div>
+                    <div class="level-marker" data-level="3">
+                        <div class="marker-dot"></div>
+                        <div>🧑</div>
+                        <div>50%</div>
+                    </div>
+                    <div class="level-marker" data-level="4">
+                        <div class="marker-dot"></div>
+                        <div>🎓</div>
+                        <div>75%</div>
+                    </div>
                 </div>
             </div>
             
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="health-score">85</div>
-                    <div class="stat-label">❤️ Health Score</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="wealth-score">72</div>
-                    <div class="stat-label">💰 Wealth Score</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="combined-score">79</div>
-                    <div class="stat-label">⚡ Combined</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="next-level">21</div>
-                    <div class="stat-label">🎯 To Next Level</div>
+            <!-- Health & Wealth Stats -->
+            <div class="stats-panel">
+                <div class="growth-title">💪 Health + Wealth</div>
+                <div class="stats-grid">
+                    <div class="stat-item health">
+                        <div class="stat-icon">❤️</div>
+                        <div class="stat-value-large" id="healthValue">0</div>
+                        <div class="stat-label-small">Health Score</div>
+                    </div>
+                    <div class="stat-item wealth">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-value-large" id="wealthValue">0</div>
+                        <div class="stat-label-small">Wealth Score</div>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Command Center -->
+        <!-- Command Center (Right) -->
         <div class="command-center">
             <h1 class="section-title">🏠 Mission Control HQ</h1>
+            
+            <div class="error-message" id="errorMessage"></div>
             
             <div class="dashboard-grid">
                 <div class="card">
@@ -562,237 +692,327 @@
     </div>
     
     <!-- Character Stats Modal -->
-    <div class="modal-overlay" id="characterModal" onclick="closeCharacterStats(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <button class="modal-close" onclick="closeCharacterStats()">×</button>
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeStatsModal()">×</button>
             <h2 class="modal-title">🎮 Character Stats</h2>
-            <div class="stat-row">
-                <span class="stat-name">Current Level</span>
-                <span class="stat-value-text" id="modal-level">Level 1 (Baby)</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-name">Growth Stage</span>
-                <span class="stat-value-text" id="modal-stage">Baby</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-name">Health Score</span>
-                <span class="stat-value-text" id="modal-health">85</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-name">Wealth Score</span>
-                <span class="stat-value-text" id="modal-wealth">72</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-name">Combined Score</span>
-                <span class="stat-value-text" id="modal-combined">79</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-name">Progress to Next Level</span>
-                <span class="stat-value-text" id="modal-progress">79%</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-name">Tasks Completed</span>
-                <span class="stat-value-text" id="modal-tasks">47</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-name">Deals Closed</span>
-                <span class="stat-value-text" id="modal-deals">12</span>
+            <div class="character-info">
+                <div class="info-row">
+                    <span class="info-label">Current Level</span>
+                    <span class="info-value" id="modalLevel">Level 1 - Baby</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Growth Stage</span>
+                    <span class="info-value" id="modalStage">👶 Baby</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Scale</span>
+                    <span class="info-value" id="modalScale">30%</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Health Score</span>
+                    <span class="info-value" id="modalHealth">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Wealth Score</span>
+                    <span class="info-value" id="modalWealth">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Combined Score</span>
+                    <span class="info-value" id="modalCombined">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Next Level At</span>
+                    <span class="info-value" id="modalNext">25 points</span>
+                </div>
             </div>
         </div>
     </div>
     
-    <!-- Level Up Toast -->
-    <div class="level-up-toast" id="levelUpToast">
-        🎉 Level Up! Your character has grown!
-    </div>
-    
+    <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Character...</div>
     </div>
 
     <script>
         // ============================================
-        // THREE.JS CHARACTER SYSTEM
+        // THREE.JS CHARACTER WITH GROWTH SYSTEM
         // ============================================
         
-        let scene, camera, renderer, character, particles;
-        let characterGroup;
-        let currentScale = 0.5; // Baby size
-        let targetScale = 0.5;
-        let isLevelingUp = false;
-        let glowIntensity = 0;
+        let scene, camera, renderer, character, mixer, controls;
+        let particles = [];
+        let clock = new THREE.Clock();
+        let currentScale = 0.3;
+        let targetScale = 0.3;
         
-        // Growth stages
-        const GROWTH_STAGES = [
-            { level: 1, name: 'Baby', minScore: 0, maxScore: 25, scale: 0.5, color: 0x00d4ff },
-            { level: 2, name: 'Child', minScore: 25, maxScore: 50, scale: 0.75, color: 0x00ff88 },
-            { level: 3, name: 'Teen', minScore: 50, maxScore: 75, scale: 1.0, color: 0xffd700 },
-            { level: 4, name: 'Adult', minScore: 75, maxScore: 100, scale: 1.25, color: 0xff6b6b }
-        ];
-        
-        // Character stats
-        let characterStats = {
-            health: 85,
-            wealth: 72,
-            tasksCompleted: 47,
-            dealsClosed: 12,
+        // Growth System State
+        const growthState = {
             level: 1,
-            stage: 'Baby'
+            healthScore: 0,
+            wealthScore: 0,
+            combinedScore: 0,
+            stage: 'baby'
         };
         
+        // Level Configuration
+        const LEVELS = {
+            1: { name: 'Baby', emoji: '👶', minScore: 0, maxScore: 25, scale: 0.3, next: 25 },
+            2: { name: 'Child', emoji: '🧒', minScore: 25, maxScore: 50, scale: 0.5, next: 50 },
+            3: { name: 'Teen', emoji: '🧑', minScore: 50, maxScore: 75, scale: 0.75, next: 75 },
+            4: { name: 'Adult', emoji: '🎓', minScore: 75, maxScore: 100, scale: 1.0, next: 100 }
+        };
+        
+        // Initialize Three.js Scene
         function initThreeJS() {
-            const container = document.getElementById('character-canvas');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
+            const container = document.getElementById('characterContainer');
+            const canvas = document.getElementById('character-canvas');
             
             // Scene
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0f0f1a);
+            scene.background = new THREE.Color(0x1a1a2e);
             
             // Camera
-            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-            camera.position.set(0, 2, 8);
-            camera.lookAt(0, 0, 0);
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 1.5, 4);
             
             // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(width, height);
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
-            container.appendChild(renderer.domElement);
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             
             // Lights
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(5, 10, 7);
-            directionalLight.castShadow = true;
-            scene.add(directionalLight);
+            const dirLight = new THREE.DirectionalLight(0x00d4ff, 0.8);
+            dirLight.position.set(2, 3, 2);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
             
-            const pointLight = new THREE.PointLight(0x00d4ff, 0.5, 10);
-            pointLight.position.set(0, 2, 2);
-            scene.add(pointLight);
+            const rimLight = new THREE.DirectionalLight(0xff00ff, 0.4);
+            rimLight.position.set(-2, 2, -2);
+            scene.add(rimLight);
             
-            // Create character
-            createCharacter();
+            // Ground
+            const groundGeometry = new THREE.CircleGeometry(3, 32);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x0f0f1a,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -1;
+            ground.receiveShadow = true;
+            scene.add(ground);
             
-            // Create particles
-            createParticles();
+            // Grid helper
+            const gridHelper = new THREE.GridHelper(6, 20, 0x00d4ff, 0x333333);
+            gridHelper.position.y = -0.99;
+            scene.add(gridHelper);
+            
+            // Load Character
+            loadCharacter();
+            
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 2;
+            controls.maxDistance = 6;
+            controls.maxPolarAngle = Math.PI / 2 - 0.1;
+            controls.enablePan = false;
+            
+            // Click handler
+            canvas.addEventListener('click', showStatsModal);
+            
+            // Resize handler
+            window.addEventListener('resize', onWindowResize);
             
             // Start animation loop
             animate();
-            
-            // Handle resize
-            window.addEventListener('resize', onWindowResize);
         }
         
-        function createCharacter() {
-            characterGroup = new THREE.Group();
+        // Load Meebit Character
+        function loadCharacter() {
+            const loader = new THREE.GLTFLoader();
+            
+            // Try to load Meebit model - VRM files can be loaded with GLTFLoader
+            const modelPaths = [
+                'assets/character.vrm',
+                'assets/meebit-11318.vrm',
+                'assets/meebit-11318.glb',
+                'assets/character.glb',
+                '../assets/character.vrm',
+                'https://airickeff-af.github.io/mc-project/assets/character.vrm'
+            ];
+            
+            let loaded = false;
+            
+            function tryLoad(index) {
+                if (index >= modelPaths.length || loaded) {
+                    // Fallback: Create procedural character
+                    createProceduralCharacter();
+                    return;
+                }
+                
+                loader.load(
+                    modelPaths[index],
+                    (gltf) => {
+                        if (loaded) return;
+                        loaded = true;
+                        character = gltf.scene;
+                        setupCharacter();
+                        
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            mixer = new THREE.AnimationMixer(character);
+                            const action = mixer.clipAction(gltf.animations[0]);
+                            action.play();
+                        }
+                        
+                        document.getElementById('loadingOverlay').classList.remove('active');
+                    },
+                    (progress) => {
+                        console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+                    },
+                    (error) => {
+                        console.warn('Failed to load from', modelPaths[index], error);
+                        tryLoad(index + 1);
+                    }
+                );
+            }
+            
+            tryLoad(0);
+        }
+        
+        // Create Procedural Character (Fallback)
+        function createProceduralCharacter() {
+            character = new THREE.Group();
             
             // Materials
-            const skinMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0xffdbac,
-                shininess: 30
-            });
+            const skinMaterial = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+            const shirtMaterial = new THREE.MeshStandardMaterial({ color: 0x00d4ff });
+            const pantsMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
             
-            const bodyMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x00d4ff,
-                shininess: 50
-            });
-            
-            const glowMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00d4ff,
-                transparent: true,
-                opacity: 0.3
-            });
-            
-            // Head (large for chibi style)
-            const headGeometry = new THREE.SphereGeometry(0.6, 32, 32);
+            // Head
+            const headGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
             const head = new THREE.Mesh(headGeometry, skinMaterial);
-            head.position.y = 1.2;
+            head.position.y = 0.7;
             head.castShadow = true;
-            characterGroup.add(head);
+            character.add(head);
             
             // Eyes
-            const eyeGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-            const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const eyeGeometry = new THREE.BoxGeometry(0.08, 0.08, 0.05);
+            const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
             
             const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-            leftEye.position.set(-0.2, 1.25, 0.5);
-            characterGroup.add(leftEye);
+            leftEye.position.set(-0.1, 0.75, 0.18);
+            character.add(leftEye);
             
             const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-            rightEye.position.set(0.2, 1.25, 0.5);
-            characterGroup.add(rightEye);
+            rightEye.position.set(0.1, 0.75, 0.18);
+            character.add(rightEye);
             
             // Body
-            const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.5, 0.8, 32);
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.position.y = 0.4;
+            const bodyGeometry = new THREE.BoxGeometry(0.5, 0.6, 0.3);
+            const body = new THREE.Mesh(bodyGeometry, shirtMaterial);
+            body.position.y = 0.2;
             body.castShadow = true;
-            characterGroup.add(body);
+            character.add(body);
             
             // Arms
-            const armGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.6, 16);
+            const armGeometry = new THREE.BoxGeometry(0.15, 0.5, 0.15);
             
             const leftArm = new THREE.Mesh(armGeometry, skinMaterial);
-            leftArm.position.set(-0.6, 0.6, 0);
-            leftArm.rotation.z = 0.3;
-            characterGroup.add(leftArm);
+            leftArm.position.set(-0.35, 0.2, 0);
+            leftArm.castShadow = true;
+            character.add(leftArm);
             
             const rightArm = new THREE.Mesh(armGeometry, skinMaterial);
-            rightArm.position.set(0.6, 0.6, 0);
-            rightArm.rotation.z = -0.3;
-            characterGroup.add(rightArm);
+            rightArm.position.set(0.35, 0.2, 0);
+            rightArm.castShadow = true;
+            character.add(rightArm);
             
             // Legs
-            const legGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.5, 16);
+            const legGeometry = new THREE.BoxGeometry(0.18, 0.5, 0.18);
             
-            const leftLeg = new THREE.Mesh(legGeometry, skinMaterial);
-            leftLeg.position.set(-0.25, -0.25, 0);
-            characterGroup.add(leftLeg);
+            const leftLeg = new THREE.Mesh(legGeometry, pantsMaterial);
+            leftLeg.position.set(-0.13, -0.35, 0);
+            leftLeg.castShadow = true;
+            character.add(leftLeg);
             
-            const rightLeg = new THREE.Mesh(legGeometry, skinMaterial);
-            rightLeg.position.set(0.25, -0.25, 0);
-            characterGroup.add(rightLeg);
+            const rightLeg = new THREE.Mesh(legGeometry, pantsMaterial);
+            rightLeg.position.set(0.13, -0.35, 0);
+            rightLeg.castShadow = true;
+            character.add(rightLeg);
             
-            // Crown for special agents (level 4)
-            const crownGeometry = new THREE.CylinderGeometry(0.35, 0.25, 0.15, 5);
-            const crownMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0xffd700,
-                shininess: 100,
-                emissive: 0xffd700,
-                emissiveIntensity: 0.2
-            });
-            const crown = new THREE.Mesh(crownGeometry, crownMaterial);
-            crown.position.y = 1.85;
-            crown.visible = false; // Only show at level 4
-            crown.name = 'crown';
-            characterGroup.add(crown);
-            
-            // Glow effect
-            const glowGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-            glow.name = 'glow';
-            characterGroup.add(glow);
-            
-            // Set initial scale
-            characterGroup.scale.set(currentScale, currentScale, currentScale);
-            
-            scene.add(characterGroup);
+            setupCharacter();
+            document.getElementById('loadingOverlay').classList.remove('active');
         }
         
-        function createParticles() {
+        // Setup Character
+        function setupCharacter() {
+            character.scale.set(currentScale, currentScale, currentScale);
+            character.position.y = -0.5;
+            character.castShadow = true;
+            character.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            scene.add(character);
+        }
+        
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            
+            // Update mixer
+            if (mixer) mixer.update(delta);
+            
+            // Smooth scale transition
+            if (character && Math.abs(currentScale - targetScale) > 0.001) {
+                currentScale += (targetScale - currentScale) * 0.05;
+                character.scale.set(currentScale, currentScale, currentScale);
+            }
+            
+            // Idle animation
+            if (character) {
+                character.rotation.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+                character.position.y = -0.5 + Math.sin(clock.getElapsedTime() * 2) * 0.02;
+            }
+            
+            // Update particles
+            updateParticles(delta);
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // Particle System for Level Up
+        function createLevelUpParticles() {
             const particleCount = 50;
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
+            const velocities = [];
             const colors = new Float32Array(particleCount * 3);
             
             for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 6;
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 6;
+                positions[i * 3] = 0;
+                positions[i * 3 + 1] = 0;
+                positions[i * 3 + 2] = 0;
+                
+                velocities.push({
+                    x: (Math.random() - 0.5) * 2,
+                    y: Math.random() * 2 + 1,
+                    z: (Math.random() - 0.5) * 2
+                });
                 
                 colors[i * 3] = 0;
                 colors[i * 3 + 1] = 0.83;
@@ -803,172 +1023,165 @@
             geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
             
             const material = new THREE.PointsMaterial({
-                size: 0.05,
+                size: 0.1,
                 vertexColors: true,
                 transparent: true,
-                opacity: 0.6,
+                opacity: 1,
                 blending: THREE.AdditiveBlending
             });
             
-            particles = new THREE.Points(geometry, material);
-            scene.add(particles);
+            const particleSystem = new THREE.Points(geometry, material);
+            particleSystem.position.y = 0.5;
+            scene.add(particleSystem);
+            
+            particles.push({
+                mesh: particleSystem,
+                velocities: velocities,
+                life: 2.0
+            });
         }
         
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            const time = Date.now() * 0.001;
-            
-            if (characterGroup) {
-                // Idle animation - gentle bounce
-                characterGroup.position.y = Math.sin(time * 2) * 0.1;
+        function updateParticles(delta) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.life -= delta;
                 
-                // Smooth scale transition
-                currentScale += (targetScale - currentScale) * 0.05;
-                characterGroup.scale.set(currentScale, currentScale, currentScale);
-                
-                // Rotate slowly
-                characterGroup.rotation.y = Math.sin(time * 0.5) * 0.2;
-                
-                // Level up glow effect
-                if (isLevelingUp) {
-                    glowIntensity = Math.sin(time * 10) * 0.5 + 0.5;
-                    const glow = characterGroup.getObjectByName('glow');
-                    if (glow) {
-                        glow.material.opacity = glowIntensity * 0.5;
-                        glow.scale.setScalar(1 + glowIntensity * 0.3);
-                    }
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                    continue;
                 }
-            }
-            
-            // Animate particles
-            if (particles) {
-                particles.rotation.y += 0.002;
-                const positions = particles.geometry.attributes.position.array;
-                for (let i = 0; i < positions.length; i += 3) {
-                    positions[i + 1] += Math.sin(time + positions[i]) * 0.002;
+                
+                const positions = p.mesh.geometry.attributes.position.array;
+                
+                for (let j = 0; j < p.velocities.length; j++) {
+                    positions[j * 3] += p.velocities[j].x * delta;
+                    positions[j * 3 + 1] += p.velocities[j].y * delta;
+                    positions[j * 3 + 2] += p.velocities[j].z * delta;
+                    
+                    p.velocities[j].y -= 2 * delta; // Gravity
                 }
-                particles.geometry.attributes.position.needsUpdate = true;
+                
+                p.mesh.geometry.attributes.position.needsUpdate = true;
+                p.mesh.material.opacity = p.life / 2;
             }
-            
-            renderer.render(scene, camera);
         }
         
+        // Window Resize
         function onWindowResize() {
-            const container = document.getElementById('character-canvas');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            
-            camera.aspect = width / height;
+            const container = document.getElementById('characterContainer');
+            camera.aspect = container.clientWidth / container.clientHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
+            renderer.setSize(container.clientWidth, container.clientHeight);
         }
         
         // ============================================
         // GROWTH SYSTEM
         // ============================================
         
-        function calculateGrowthStage() {
-            const combinedScore = Math.round((characterStats.health + characterStats.wealth) / 2);
+        function calculateGrowth(health, wealth) {
+            growthState.healthScore = health;
+            growthState.wealthScore = wealth;
+            growthState.combinedScore = Math.min(100, Math.round((health + wealth) / 2));
             
-            // Find current stage
-            let currentStage = GROWTH_STAGES[0];
-            for (const stage of GROWTH_STAGES) {
-                if (combinedScore >= stage.minScore) {
-                    currentStage = stage;
+            // Determine level
+            let newLevel = 1;
+            for (let i = 4; i >= 1; i--) {
+                if (growthState.combinedScore >= LEVELS[i].minScore) {
+                    newLevel = i;
+                    break;
                 }
             }
             
             // Check for level up
-            if (currentStage.level > characterStats.level) {
-                triggerLevelUp(currentStage);
+            if (newLevel > growthState.level) {
+                triggerLevelUp(newLevel);
             }
             
-            characterStats.level = currentStage.level;
-            characterStats.stage = currentStage.name;
+            growthState.level = newLevel;
+            growthState.stage = LEVELS[newLevel].name.toLowerCase();
             
             // Update target scale
-            targetScale = currentStage.scale;
+            targetScale = LEVELS[newLevel].scale;
             
-            return { combinedScore, currentStage };
+            updateUI();
         }
         
-        function triggerLevelUp(newStage) {
-            isLevelingUp = true;
+        function triggerLevelUp(newLevel) {
+            // Show level up animation
+            const overlay = document.getElementById('levelUpOverlay');
+            overlay.classList.add('active');
+            setTimeout(() => overlay.classList.remove('active'), 1000);
             
-            // Show toast
-            const toast = document.getElementById('levelUpToast');
-            toast.textContent = `🎉 Level Up! Your character is now a ${newStage.name}!`;
-            toast.classList.add('show');
+            // Show glow effect
+            const glow = document.getElementById('glowEffect');
+            glow.classList.add('active');
+            setTimeout(() => glow.classList.remove('active'), 2000);
             
-            // Pulse effect on canvas
-            const canvas = document.getElementById('character-canvas');
-            canvas.classList.add('leveling-up');
+            // Create particles
+            createLevelUpParticles();
             
-            // Show crown if level 4
-            if (newStage.level === 4) {
-                const crown = characterGroup.getObjectByName('crown');
-                if (crown) crown.visible = true;
-            }
+            // Play sound (optional)
+            console.log(`Level Up! Now Level ${newLevel} - ${LEVELS[newLevel].name}`);
+        }
+        
+        function updateUI() {
+            const level = growthState.level;
+            const score = growthState.combinedScore;
+            const levelData = LEVELS[level];
             
-            setTimeout(() => {
-                isLevelingUp = false;
-                toast.classList.remove('show');
-                canvas.classList.remove('leveling-up');
+            // Update badges
+            document.getElementById('currentLevel').textContent = level;
+            document.getElementById('stageLabel').textContent = `${levelData.emoji} ${levelData.name}`;
+            
+            // Update progress
+            const progressInLevel = (score - levelData.minScore) / (levelData.maxScore - levelData.minScore) * 100;
+            const totalProgress = Math.min(100, Math.max(0, progressInLevel));
+            document.getElementById('growthProgress').style.width = totalProgress + '%';
+            document.getElementById('growthScore').textContent = score;
+            
+            // Update markers
+            document.querySelectorAll('.level-marker').forEach(marker => {
+                const markerLevel = parseInt(marker.dataset.level);
+                marker.classList.remove('active', 'completed');
                 
-                // Reset glow
-                const glow = characterGroup.getObjectByName('glow');
-                if (glow) {
-                    glow.material.opacity = 0.3;
-                    glow.scale.setScalar(1);
+                if (markerLevel === level) {
+                    marker.classList.add('active');
+                } else if (markerLevel < level) {
+                    marker.classList.add('completed');
                 }
-            }, 3000);
+            });
+            
+            // Update stats
+            document.getElementById('healthValue').textContent = growthState.healthScore;
+            document.getElementById('wealthValue').textContent = growthState.wealthScore;
+            
+            // Update modal
+            document.getElementById('modalLevel').textContent = `Level ${level} - ${levelData.name}`;
+            document.getElementById('modalStage').textContent = `${levelData.emoji} ${levelData.name}`;
+            document.getElementById('modalScale').textContent = Math.round(levelData.scale * 100) + '%';
+            document.getElementById('modalHealth').textContent = growthState.healthScore;
+            document.getElementById('modalWealth').textContent = growthState.wealthScore;
+            document.getElementById('modalCombined').textContent = score;
+            document.getElementById('modalNext').textContent = level < 4 ? `${levelData.next} points` : 'Max Level!';
         }
         
-        function updateGrowthUI() {
-            const { combinedScore, currentStage } = calculateGrowthStage();
-            
-            // Calculate progress to next level
-            const nextStage = GROWTH_STAGES[currentStage.level] || currentStage;
-            const progressInStage = (combinedScore - currentStage.minScore) / (currentStage.maxScore - currentStage.minScore);
-            const progressPercent = Math.min(100, Math.max(0, progressInStage * 100));
-            
-            // Update UI elements
-            document.getElementById('level-badge').textContent = `Level ${currentStage.level}`;
-            document.getElementById('growth-stage').textContent = currentStage.name;
-            document.getElementById('growth-score').textContent = `Score: ${combinedScore}/100`;
-            document.getElementById('progress-bar').style.width = `${combinedScore}%`;
-            
-            document.getElementById('health-score').textContent = characterStats.health;
-            document.getElementById('wealth-score').textContent = characterStats.wealth;
-            document.getElementById('combined-score').textContent = combinedScore;
-            
-            const toNextLevel = Math.max(0, currentStage.maxScore - combinedScore);
-            document.getElementById('next-level').textContent = toNextLevel;
-            
-            // Update modal stats
-            document.getElementById('modal-level').textContent = `Level ${currentStage.level} (${currentStage.name})`;
-            document.getElementById('modal-stage').textContent = currentStage.name;
-            document.getElementById('modal-health').textContent = characterStats.health;
-            document.getElementById('modal-wealth').textContent = characterStats.wealth;
-            document.getElementById('modal-combined').textContent = combinedScore;
-            document.getElementById('modal-progress').textContent = `${Math.round(progressPercent)}%`;
-            document.getElementById('modal-tasks').textContent = characterStats.tasksCompleted;
-            document.getElementById('modal-deals').textContent = characterStats.dealsClosed;
+        // Modal Functions
+        function showStatsModal() {
+            document.getElementById('statsModal').classList.add('active');
         }
         
-        function showCharacterStats() {
-            document.getElementById('characterModal').classList.add('active');
+        function closeStatsModal() {
+            document.getElementById('statsModal').classList.remove('active');
         }
         
-        function closeCharacterStats(event) {
-            if (!event || event.target.id === 'characterModal') {
-                document.getElementById('characterModal').classList.remove('active');
-            }
-        }
+        // Close modal on outside click
+        document.getElementById('statsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'statsModal') closeStatsModal();
+        });
         
         // ============================================
-        // API INTEGRATION
+        // DASHBOARD DATA
         // ============================================
         
         const API_BASE = '/api';
@@ -983,7 +1196,6 @@
             refreshBtn.classList.add('spinning');
             
             try {
-                // Fetch all data in parallel
                 const [agentsRes, tasksRes, statsRes, dealsRes] = await Promise.allSettled([
                     fetch(`${API_BASE}/agents`),
                     fetch(`${API_BASE}/tasks`),
@@ -992,9 +1204,13 @@
                 ]);
                 
                 // Process agents data
+                let healthScore = 50;
+                let wealthScore = 50;
+                
                 if (agentsRes.status === 'fulfilled' && agentsRes.value.ok) {
                     const agentsData = await agentsRes.value.json();
                     updateAgentsStats(agentsData);
+                    healthScore = Math.min(100, (agentsData.active || 18) * 4);
                 } else {
                     updateAgentsStats({ agents: [], total: 23, active: 18 });
                 }
@@ -1003,10 +1219,8 @@
                 if (tasksRes.status === 'fulfilled' && tasksRes.value.ok) {
                     const tasksData = await tasksRes.value.json();
                     updateTasksStats(tasksData);
-                    // Update character stats based on tasks
-                    const completedTasks = tasksData.tasks ? tasksData.tasks.filter(t => t.status === 'completed').length : 47;
-                    characterStats.tasksCompleted = completedTasks;
-                    characterStats.health = Math.min(100, 50 + Math.floor(completedTasks / 2));
+                    const completionRate = tasksData.completed / (tasksData.total || 1) * 100;
+                    healthScore = Math.min(100, healthScore + completionRate * 0.5);
                 } else {
                     updateTasksStats({ tasks: [], total: 47, pending: 12 });
                 }
@@ -1015,6 +1229,7 @@
                 if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
                     const statsData = await statsRes.value.json();
                     updateTokenStats(statsData);
+                    wealthScore = Math.min(100, 50 + (statsData.tokens || 0) / 10000);
                 } else {
                     updateTokenStats({ tokens: 442000, cost: 0.52 });
                 }
@@ -1023,25 +1238,28 @@
                 if (dealsRes.status === 'fulfilled' && dealsRes.value.ok) {
                     const dealsData = await dealsRes.value.json();
                     updateDealsStats(dealsData);
-                    // Update character stats based on deals
-                    const closedDeals = dealsData.deals ? dealsData.deals.filter(d => d.status === 'closed').length : 12;
-                    characterStats.dealsClosed = closedDeals;
-                    characterStats.wealth = Math.min(100, 40 + Math.floor(closedDeals * 3));
+                    wealthScore = Math.min(100, wealthScore + (dealsData.total || 0) * 2);
                 } else {
                     updateDealsStats({ deals: [], total: 30, new: 5 });
                 }
                 
-                // Update growth system
-                updateGrowthUI();
+                // Update growth
+                calculateGrowth(Math.round(healthScore), Math.round(wealthScore));
+                
+                document.getElementById('errorMessage').classList.remove('active');
                 
             } catch (error) {
                 console.error('Error loading data:', error);
+                showError('Failed to load some data. Using cached values.');
+                
                 // Use fallback data
                 updateAgentsStats({ agents: [], total: 23, active: 18 });
                 updateTasksStats({ tasks: [], total: 47, pending: 12 });
                 updateTokenStats({ tokens: 442000, cost: 0.52 });
                 updateDealsStats({ deals: [], total: 30, new: 5 });
-                updateGrowthUI();
+                
+                // Fallback growth calculation
+                calculateGrowth(45, 55);
             } finally {
                 isRefreshing = false;
                 refreshBtn.classList.remove('spinning');
@@ -1051,7 +1269,6 @@
         function updateAgentsStats(data) {
             const total = data.total || (data.agents ? data.agents.length : 23);
             const active = data.active || (data.agents ? data.agents.filter(a => a.status === 'active').length : 18);
-            
             document.getElementById('totalAgents').textContent = total;
             document.getElementById('activeAgents').textContent = active;
         }
@@ -1059,7 +1276,6 @@
         function updateTasksStats(data) {
             const total = data.total || (data.tasks ? data.tasks.length : 47);
             const pending = data.pending || (data.tasks ? data.tasks.filter(t => t.status === 'pending').length : 12);
-            
             document.getElementById('totalTasks').textContent = total;
             document.getElementById('pendingTasks').textContent = pending;
         }
@@ -1067,7 +1283,6 @@
         function updateTokenStats(data) {
             const tokens = data.tokens || data.totalTokens || 442000;
             const cost = data.cost || data.totalCost || 0.52;
-            
             document.getElementById('totalTokens').textContent = formatNumber(tokens);
             document.getElementById('tokenCost').textContent = '$' + cost.toFixed(2);
         }
@@ -1075,7 +1290,6 @@
         function updateDealsStats(data) {
             const total = data.total || (data.deals ? data.deals.length : 30);
             const newDeals = data.new || (data.deals ? data.deals.filter(d => d.status === 'new').length : 5);
-            
             document.getElementById('totalDeals').textContent = total;
             document.getElementById('newDeals').textContent = newDeals;
         }
@@ -1084,6 +1298,13 @@
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
             return num.toString();
+        }
+        
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('active');
+            setTimeout(() => errorEl.classList.remove('active'), 5000);
         }
         
         function refreshData() {
@@ -1095,17 +1316,17 @@
             autoRefreshInterval = setInterval(() => {
                 console.log('[Auto-Refresh] Reloading data...');
                 loadData();
-            }, 30 * 60 * 1000); // 30 minutes
+            }, 30 * 60 * 1000);
         }
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loadingOverlay').classList.add('active');
             initThreeJS();
             loadData();
             startAutoRefresh();
         });
         
-        // Handle visibility change
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
                 loadData();
