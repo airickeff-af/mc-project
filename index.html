@@ -2,800 +2,1115 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MC Project - Health & Wealth Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="Mission Control HQ - AI Team Dashboard with Growing Character">
+    <meta name="theme-color" content="#2d1b4e">
+    <title>Mission Control HQ | AI Team Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
             min-height: 100vh;
+            overflow-x: hidden;
         }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        
-        header h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #4ecdc4, #ffe66d);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        header p {
-            font-size: 18px;
-            opacity: 0.8;
-        }
-        
-        /* Streak Section */
-        .streak-section {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 40px;
-        }
-        
-        .streak-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px 50px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .streak-emoji {
-            font-size: 60px;
-            margin-bottom: 15px;
-            animation: pulse 2s ease infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        .streak-text {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        
-        .streak-subtext {
-            opacity: 0.7;
-            font-size: 14px;
-        }
-        
-        .streak-counter {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, #ff6b35, #f7931e);
-            padding: 10px 20px;
-            border-radius: 25px;
-            margin-top: 15px;
-            font-weight: 600;
-        }
-        
-        .streak-fire {
-            font-size: 24px;
-            animation: flicker 0.5s ease infinite alternate;
-        }
-        
-        @keyframes flicker {
-            0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0.8; transform: scale(1.1); }
-        }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-        
-        .card h2 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .card.health h2 { color: #ff6b6b; }
-        .card.wealth h2 { color: #4ecdc4; }
-        .card.goals h2 { color: #ffe66d; }
-        .card.comparison h2 { color: #a78bfa; }
-        .card.tips h2 { color: #6ee7b7; }
-        
-        /* Stats with Progress Bars */
-        .stat-row {
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid #00d4ff;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 15px 0;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: relative;
+            z-index: 100;
+        }
+        .logo { font-size: 1.5rem; font-weight: 700; color: #00d4ff; }
+        .nav { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .nav a {
+            color: #888;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .nav a:hover, .nav a.active { color: #00d4ff; background: rgba(0,212,255,0.1); }
+        .refresh-btn {
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .refresh-btn:hover { background: rgba(0, 212, 255, 0.3); }
+        .refresh-btn.spinning .refresh-icon { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: calc(100vh - 80px);
         }
         
-        .stat-row:last-child {
-            border-bottom: none;
+        /* Character Section */
+        .character-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
         
-        .stat-info {
-            flex: 1;
+        #character-canvas {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            border: 2px solid #333;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #character-canvas:hover {
+            border-color: #00d4ff;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+        
+        #character-canvas.leveling-up {
+            animation: levelUpPulse 1s ease-in-out;
+        }
+        
+        @keyframes levelUpPulse {
+            0%, 100% { box-shadow: 0 0 0 rgba(0, 212, 255, 0); }
+            50% { box-shadow: 0 0 60px rgba(0, 212, 255, 0.6); }
+        }
+        
+        .character-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .level-badge {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: #000;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+        
+        .growth-stage {
+            background: rgba(0, 0, 0, 0.6);
+            color: #00d4ff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            border: 1px solid #00d4ff;
+        }
+        
+        /* Growth Progress */
+        .growth-panel {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .growth-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .growth-title {
+            color: #00d4ff;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .growth-score {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        .progress-container {
+            position: relative;
+            height: 12px;
+            background: #1a1a2e;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            border-radius: 6px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #666;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover { border-color: #00d4ff; transform: translateY(-2px); }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 0.25rem;
         }
         
         .stat-label {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-bottom: 5px;
+            color: #888;
+            font-size: 0.85rem;
         }
         
-        .stat-bar {
-            width: 100%;
-            height: 10px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        
-        .stat-fill {
-            height: 100%;
-            border-radius: 5px;
-            transition: width 0.5s ease;
-        }
-        
-        .health-fill { background: linear-gradient(90deg, #ff6b6b, #ee5a5a); }
-        .wealth-fill { background: linear-gradient(90deg, #4ecdc4, #44a08d); }
-        
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            margin-left: 15px;
-            min-width: 80px;
-            text-align: right;
-        }
-        
-        /* Chart Container */
-        .chart-container {
-            height: 200px;
-            margin-top: 20px;
-        }
-        
-        /* Goals Section */
-        .goal-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 15px;
-            margin: 10px 0;
-        }
-        
-        .goal-header {
+        /* Command Center */
+        .command-center {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+            flex-direction: column;
+            gap: 1.5rem;
         }
         
-        .goal-title {
-            font-weight: 600;
-        }
-        
-        .goal-amount {
-            color: #4ecdc4;
-            font-weight: bold;
-        }
-        
-        .goal-progress {
-            width: 100%;
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .goal-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ffe66d, #f4d03f);
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-        
-        .goal-meta {
+        .section-title {
+            color: #00d4ff;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
             display: flex;
-            justify-content: space-between;
-            margin-top: 8px;
-            font-size: 12px;
-            opacity: 0.7;
-        }
-        
-        .btn {
-            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
+            gap: 0.5rem;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
+            border: 1px solid #333;
             border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s;
-            margin-top: 15px;
+            padding: 1.5rem;
+            transition: all 0.2s;
         }
         
-        .btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 10px 30px rgba(78, 205, 196, 0.3);
-        }
+        .card:hover { border-color: #00d4ff; transform: translateY(-2px); }
         
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 12px;
-        }
-        
-        /* Comparison Table */
-        .comparison-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .comparison-table th,
-        .comparison-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .comparison-table th {
-            opacity: 0.7;
-            font-weight: 500;
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-        
-        .comparison-table tr:hover {
-            background: rgba(255,255,255,0.05);
-        }
-        
-        .you-row {
-            background: rgba(78, 205, 196, 0.1) !important;
-        }
-        
-        .rank-badge {
+        .card h2 { color: #00d4ff; margin-bottom: 1rem; font-size: 1.1rem; }
+        .card p { color: #888; line-height: 1.6; font-size: 0.9rem; }
+        .card a {
             display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
+            margin-top: 1rem;
+            color: #00d4ff;
+            text-decoration: none;
             font-weight: 600;
+            font-size: 0.9rem;
         }
+        .card a:hover { text-decoration: underline; }
         
-        .rank-1 { background: linear-gradient(135deg, #ffd700, #ffb700); color: #000; }
-        .rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
-        .rank-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #fff; }
+        .card-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+        .card-stat { text-align: center; }
+        .card-stat-value { font-size: 1.5rem; font-weight: 700; color: #00d4ff; }
+        .card-stat-label { color: #666; font-size: 0.8rem; }
         
-        /* Daily Tips */
-        .tip-card {
-            background: rgba(110, 231, 183, 0.1);
-            border-left: 4px solid #6ee7b7;
-            padding: 15px;
-            border-radius: 0 12px 12px 0;
-            margin: 10px 0;
-        }
-        
-        .tip-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-        
-        .tip-text {
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        /* Achievement Popup */
-        .achievement-popup {
+        /* Character Stats Modal */
+        .modal-overlay {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #ffd700, #ffb700);
-            color: #000;
-            padding: 20px 25px;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            z-index: 1000;
-            transform: translateX(400px);
-            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            max-width: 350px;
-        }
-        
-        .achievement-popup.show {
-            transform: translateX(0);
-        }
-        
-        .achievement-icon {
-            font-size: 40px;
-            margin-bottom: 10px;
-        }
-        
-        .achievement-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        
-        .achievement-desc {
-            font-size: 14px;
-            opacity: 0.8;
-        }
-        
-        /* Action Buttons */
-        .action-bar {
-            display: flex;
-            gap: 15px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
             justify-content: center;
-            margin-top: 40px;
-            flex-wrap: wrap;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        .modal-overlay.active { display: flex; }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
+            border: 2px solid #00d4ff;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            animation: modalIn 0.3s ease;
         }
         
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
         
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
         }
         
-        footer {
-            text-align: center;
-            padding: 40px;
-            opacity: 0.6;
-            font-size: 14px;
+        .modal-close:hover { color: #00d4ff; }
+        
+        .modal-title {
+            color: #00d4ff;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .stat-row:last-child { border-bottom: none; }
+        
+        .stat-name { color: #888; }
+        .stat-value-text { color: #00d4ff; font-weight: 600; }
+        
+        /* Level Up Notification */
+        .level-up-toast {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, #00d4ff, #00ff88);
+            color: #000;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.4);
+            z-index: 1001;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+        
+        .level-up-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
         }
         
         /* Responsive */
-        @media (max-width: 768px) {
-            header h1 { font-size: 32px; }
-            .grid { grid-template-columns: 1fr; }
-            .emotion-emoji { font-size: 60px; }
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            #character-canvas {
+                height: 300px;
+            }
         }
+        
+        @media (max-width: 768px) {
+            .main-container { padding: 1rem; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 15, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-spinner {
+            width: 50px; height: 50px;
+            border: 3px solid rgba(0, 212, 255, 0.2);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .error-message.active { display: block; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎮 MC Project</h1>
-            <p>Your Personal Health & Wealth Command Center</p>
-        </header>
-        
-        <!-- Streak Section -->
-        <div class="streak-section">
-            <div class="streak-card">
-                <div class="streak-emoji">🎮</div>
-                <div class="streak-text">MC Project</div>
-                <div class="streak-subtext">Your Personal Health & Wealth Command Center</div>
-                <div class="streak-counter">
-                    <span class="streak-fire">🔥</span>
-                    <span id="streak-count">12 Day Streak!</span>
+    <header class="header">
+        <div class="logo">🎯 Mission Control</div>
+        <nav class="nav">
+            <a href="/" class="active">HQ</a>
+            <a href="/pixel-office">Office</a>
+            <a href="/agent-roster">Agents</a>
+            <a href="/deals">DealFlow</a>
+            <a href="/tokens">Tokens</a>
+            <a href="/task-board">Tasks</a>
+            <a href="/logs">Logs</a>
+            <a href="/data">Data</a>
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+                <span class="refresh-icon">🔄</span> Refresh
+            </button>
+        </nav>
+    </header>
+
+    <div class="main-container">
+        <!-- Character Section -->
+        <div class="character-section">
+            <div id="character-canvas" onclick="showCharacterStats()">
+                <div class="character-overlay">
+                    <span class="level-badge" id="level-badge">Level 1</span>
+                    <span class="growth-stage" id="growth-stage">Baby</span>
+                </div>
+            </div>
+            
+            <div class="growth-panel">
+                <div class="growth-header">
+                    <span class="growth-title">📈 Growth Progress</span>
+                    <span class="growth-score" id="growth-score">Score: 0/100</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="progress-labels">
+                    <span>Baby</span>
+                    <span>Child</span>
+                    <span>Teen</span>
+                    <span>Adult</span>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="health-score">85</div>
+                    <div class="stat-label">❤️ Health Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="wealth-score">72</div>
+                    <div class="stat-label">💰 Wealth Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="combined-score">79</div>
+                    <div class="stat-label">⚡ Combined</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="next-level">21</div>
+                    <div class="stat-label">🎯 To Next Level</div>
                 </div>
             </div>
         </div>
         
-        <div class="grid">
-            <!-- Health Card with Chart -->
-            <div class="card health">
-                <h2>💪 Health Tracker</h2>
-                <div class="stat-row">
-                    <div class="stat-info">
-                        <div class="stat-label">Exercise Today</div>
-                        <div class="stat-bar">
-                            <div class="stat-fill health-fill" id="exercise-bar" style="width: 65%"></div>
-                        </div>
-                    </div>
-                    <div class="stat-value" id="exercise-val">45 min</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-info">
-                        <div class="stat-label">Sleep Last Night</div>
-                        <div class="stat-bar">
-                            <div class="stat-fill health-fill" id="sleep-bar" style="width: 80%"></div>
-                        </div>
-                    </div>
-                    <div class="stat-value" id="sleep-val">7.5 hrs</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-info">
-                        <div class="stat-label">Calories Tracked</div>
-                        <div class="stat-bar">
-                            <div class="stat-fill health-fill" id="calories-bar" style="width: 70%"></div>
-                        </div>
-                    </div>
-                    <div class="stat-value" id="calories-val">1,850</div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="healthChart"></canvas>
-                </div>
-            </div>
+        <!-- Command Center -->
+        <div class="command-center">
+            <h1 class="section-title">🏠 Mission Control HQ</h1>
             
-            <!-- Wealth Card with Chart -->
-            <div class="card wealth">
-                <h2>💰 Wealth Tracker</h2>
-                <div class="stat-row">
-                    <div class="stat-info">
-                        <div class="stat-label">Total Savings</div>
-                        <div class="stat-bar">
-                            <div class="stat-fill wealth-fill" id="savings-bar" style="width: 55%"></div>
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h2>🏢 Pixel Office</h2>
+                    <p>Interactive Kairosoft-style office with 22 AI agents. Watch them work, call standups, and generate meeting minutes.</p>
+                    <a href="office.html">Enter Office →</a>
+                </div>
+                
+                <div class="card">
+                    <h2>👥 Agent Roster</h2>
+                    <p>View all 23 AI agents, their status, token usage, tasks completed, and current activity.</p>
+                    <a href="agents.html">View Agents →</a>
+                    <div class="card-stats">
+                        <div class="card-stat">
+                            <div class="card-stat-value" id="totalAgents">--</div>
+                            <div class="card-stat-label">Total Agents</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="card-stat-value" id="activeAgents">--</div>
+                            <div class="card-stat-label">Active</div>
                         </div>
                     </div>
-                    <div class="stat-value" id="savings-val">$12,450</div>
                 </div>
-                <div class="stat-row">
-                    <div class="stat-info">
-                        <div class="stat-label">Investments</div>
-                        <div class="stat-bar">
-                            <div class="stat-fill wealth-fill" id="invest-bar" style="width: 40%"></div>
+                
+                <div class="card">
+                    <h2>📋 Task Board</h2>
+                    <p>View and manage all tasks. Filter by priority (P0-P3) and status. Track completion progress.</p>
+                    <a href="task-board.html">View Tasks →</a>
+                    <div class="card-stats">
+                        <div class="card-stat">
+                            <div class="card-stat-value" id="totalTasks">--</div>
+                            <div class="card-stat-label">Total</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="card-stat-value" id="pendingTasks">--</div>
+                            <div class="card-stat-label">Pending</div>
                         </div>
                     </div>
-                    <div class="stat-value" id="invest-val">$8,200</div>
                 </div>
-                <div class="stat-row">
-                    <div class="stat-info">
-                        <div class="stat-label">Gig Earnings</div>
-                        <div class="stat-bar">
-                            <div class="stat-fill wealth-fill" id="gig-bar" style="width: 75%"></div>
+                
+                <div class="card">
+                    <h2>📢 Daily Standup</h2>
+                    <p>Generate daily standup notes with task summaries, blockers, and next actions.</p>
+                    <a href="standup.html">Open Standup →</a>
+                </div>
+                
+                <div class="card">
+                    <h2>🪙 Token Tracker</h2>
+                    <p>Monitor API token usage across all agents. Track costs and usage patterns.</p>
+                    <a href="token-tracker.html">View Tokens →</a>
+                    <div class="card-stats">
+                        <div class="card-stat">
+                            <div class="card-stat-value" id="totalTokens">--</div>
+                            <div class="card-stat-label">Tokens</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="card-stat-value" id="tokenCost">--</div>
+                            <div class="card-stat-label">Cost</div>
                         </div>
                     </div>
-                    <div class="stat-value" id="gig-val">$3,800</div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="wealthChart"></canvas>
-                </div>
-            </div>
-            
-            <!-- Goals Card -->
-            <div class="card goals">
-                <h2>🎯 Monthly Goals</h2>
-                <div class="goal-item">
-                    <div class="goal-header">
-                        <span class="goal-title">💰 Save $500 this month</span>
-                        <span class="goal-amount">$420 / $500</span>
-                    </div>
-                    <div class="goal-progress">
-                        <div class="goal-progress-fill" style="width: 84%"></div>
-                    </div>
-                    <div class="goal-meta">
-                        <span>18 days remaining</span>
-                        <span>84% complete</span>
-                    </div>
-                </div>
-                <div class="goal-item">
-                    <div class="goal-header">
-                        <span class="goal-title">💪 Exercise 30 mins/day</span>
-                        <span class="goal-amount">22 / 30 days</span>
-                    </div>
-                    <div class="goal-progress">
-                        <div class="goal-progress-fill" style="width: 73%"></div>
-                    </div>
-                    <div class="goal-meta">
-                        <span>8 days remaining</span>
-                        <span>73% complete</span>
-                    </div>
-                </div>
-                <div class="goal-item">
-                    <div class="goal-header">
-                        <span class="goal-title">📚 Read 4 books</span>
-                        <span class="goal-amount">2 / 4 books</span>
-                    </div>
-                    <div class="goal-progress">
-                        <div class="goal-progress-fill" style="width: 50%"></div>
-                    </div>
-                    <div class="goal-meta">
-                        <span>2 weeks remaining</span>
-                        <span>50% complete</span>
-                    </div>
-                </div>
-                <button class="btn btn-small" onclick="showAchievement('Goal Crusher!', 'You\'re on track to hit all 3 goals this month!')">✨ Set New Goal</button>
-            </div>
-            
-            <!-- Comparison Card -->
-            <div class="card comparison">
-                <h2>🏆 Friend Comparison</h2>
-                <table class="comparison-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Friend</th>
-                            <th>Health</th>
-                            <th>Wealth</th>
-                            <th>Streak</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="rank-badge rank-1">🥇 1st</span></td>
-                            <td>Anonymous A</td>
-                            <td>92%</td>
-                            <td>$45K</td>
-                            <td>🔥 28</td>
-                        </tr>
-                        <tr class="you-row">
-                            <td><span class="rank-badge rank-2">🥈 2nd</span></td>
-                            <td><strong>You</strong></td>
-                            <td><strong>78%</strong></td>
-                            <td><strong>$24K</strong></td>
-                            <td><strong>🔥 12</strong></td>
-                        </tr>
-                        <tr>
-                            <td><span class="rank-badge rank-3">🥉 3rd</span></td>
-                            <td>Anonymous B</td>
-                            <td>75%</td>
-                            <td>$18K</td>
-                            <td>🔥 8</td>
-                        </tr>
-                        <tr>
-                            <td>#4</td>
-                            <td>Anonymous C</td>
-                            <td>68%</td>
-                            <td>$15K</td>
-                            <td>🔥 5</td>
-                        </tr>
-                        <tr>
-                            <td>#5</td>
-                            <td>Anonymous D</td>
-                            <td>62%</td>
-                            <td>$12K</td>
-                            <td>🔥 3</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p style="font-size: 12px; opacity: 0.6; margin-top: 15px; text-align: center;">
-                    💡 You're in the top 40% of users! Keep it up!
-                </p>
-            </div>
-            
-            <!-- Daily Tips Card -->
-            <div class="card tips">
-                <h2>💡 Daily Tips</h2>
-                <div class="tip-card">
-                    <div class="tip-icon">💰</div>
-                    <div class="tip-text">
-                        <strong>Wealth Tip:</strong> You're spending 15% more on dining out than last month. Try meal prepping to save an estimated $200/month!
-                    </div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-icon">💪</div>
-                    <div class="tip-text">
-                        <strong>Health Tip:</strong> Great job on exercise! Your sleep average is 6.5 hrs - aim for 7-8 hrs to boost recovery.
-                    </div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-icon">🎯</div>
-                    <div class="tip-text">
-                        <strong>Goal Tip:</strong> You're $80 away from your savings goal. One more gig this month and you'll hit it!
+                
+                <div class="card">
+                    <h2>💼 DealFlow</h2>
+                    <p>Track partnership opportunities and qualified leads with full contact information.</p>
+                    <a href="deals.html">View Deals →</a>
+                    <div class="card-stats">
+                        <div class="card-stat">
+                            <div class="card-stat-value" id="totalDeals">--</div>
+                            <div class="card-stat-label">Deals</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="card-stat-value" id="newDeals">--</div>
+                            <div class="card-stat-label">New</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Action Bar -->
-        <div class="action-bar">
-            <a href="/viewer.html" class="btn btn-primary">🎮 Launch 3D Viewer</a>
-            <button class="btn btn-secondary" onclick="showAchievement('Early Bird!', 'You checked in before 9 AM! +5 streak bonus')">📊 View Reports</button>
-            <button class="btn btn-secondary" onclick="toggleGoalModal()">🎯 Add Goal</button>
-        </div>
-        
-        <footer>
-            <p>MC Project © 2026 | Built with 💚 by Meemo</p>
-        </footer>
     </div>
     
-    <!-- Achievement Popup -->
-    <div class="achievement-popup" id="achievement-popup">
-        <div class="achievement-icon" id="achievement-icon">🏆</div>
-        <div class="achievement-title" id="achievement-title">Achievement Unlocked!</div>
-        <div class="achievement-desc" id="achievement-desc">Keep up the great work!</div>
+    <!-- Character Stats Modal -->
+    <div class="modal-overlay" id="characterModal" onclick="closeCharacterStats(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeCharacterStats()">×</button>
+            <h2 class="modal-title">🎮 Character Stats</h2>
+            <div class="stat-row">
+                <span class="stat-name">Current Level</span>
+                <span class="stat-value-text" id="modal-level">Level 1 (Baby)</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Growth Stage</span>
+                <span class="stat-value-text" id="modal-stage">Baby</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Health Score</span>
+                <span class="stat-value-text" id="modal-health">85</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Wealth Score</span>
+                <span class="stat-value-text" id="modal-wealth">72</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Combined Score</span>
+                <span class="stat-value-text" id="modal-combined">79</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Progress to Next Level</span>
+                <span class="stat-value-text" id="modal-progress">79%</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Tasks Completed</span>
+                <span class="stat-value-text" id="modal-tasks">47</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Deals Closed</span>
+                <span class="stat-value-text" id="modal-deals">12</span>
+            </div>
+        </div>
     </div>
     
+    <!-- Level Up Toast -->
+    <div class="level-up-toast" id="levelUpToast">
+        🎉 Level Up! Your character has grown!
+    </div>
+    
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
     <script>
-        // Health & Wealth History Data (7-day trend)
-        const healthData = {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-                label: 'Health Score',
-                data: [65, 70, 68, 75, 72, 78, 80],
-                borderColor: '#ff6b6b',
-                backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
+        // ============================================
+        // THREE.JS CHARACTER SYSTEM
+        // ============================================
+        
+        let scene, camera, renderer, character, particles;
+        let characterGroup;
+        let currentScale = 0.5; // Baby size
+        let targetScale = 0.5;
+        let isLevelingUp = false;
+        let glowIntensity = 0;
+        
+        // Growth stages
+        const GROWTH_STAGES = [
+            { level: 1, name: 'Baby', minScore: 0, maxScore: 25, scale: 0.5, color: 0x00d4ff },
+            { level: 2, name: 'Child', minScore: 25, maxScore: 50, scale: 0.75, color: 0x00ff88 },
+            { level: 3, name: 'Teen', minScore: 50, maxScore: 75, scale: 1.0, color: 0xffd700 },
+            { level: 4, name: 'Adult', minScore: 75, maxScore: 100, scale: 1.25, color: 0xff6b6b }
+        ];
+        
+        // Character stats
+        let characterStats = {
+            health: 85,
+            wealth: 72,
+            tasksCompleted: 47,
+            dealsClosed: 12,
+            level: 1,
+            stage: 'Baby'
         };
         
-        const wealthData = {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-                label: 'Wealth Score',
-                data: [55, 58, 56, 60, 62, 65, 68],
-                borderColor: '#4ecdc4',
-                backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        };
-        
-        // Initialize Charts
-        const healthChart = new Chart(document.getElementById('healthChart'), {
-            type: 'line',
-            data: healthData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        grid: { color: 'rgba(255,255,255,0.1)' },
-                        ticks: { color: 'rgba(255,255,255,0.7)' }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: 'rgba(255,255,255,0.7)' }
-                    }
-                }
-            }
-        });
-        
-        const wealthChart = new Chart(document.getElementById('wealthChart'), {
-            type: 'line',
-            data: wealthData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        grid: { color: 'rgba(255,255,255,0.1)' },
-                        ticks: { color: 'rgba(255,255,255,0.7)' }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: 'rgba(255,255,255,0.7)' }
-                    }
-                }
-            }
-        });
-        
-        // Character Emotion System
-        function updateEmotion() {
-            const health = 78; // Current health score
-            const wealth = 68; // Current wealth score
-            const combined = (health + wealth) / 2;
+        function initThreeJS() {
+            const container = document.getElementById('character-canvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
             
-            const emotionEmoji = document.getElementById('emotion-emoji');
-            const emotionText = document.getElementById('emotion-text');
-            const emotionSubtext = document.getElementById('emotion-subtext');
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f0f1a);
             
-            if (combined >= 80) {
-                emotionEmoji.textContent = '🤩';
-                emotionText.textContent = 'On Top of the World!';
-                emotionSubtext.textContent = 'Your health and wealth are thriving!';
-            } else if (combined >= 65) {
-                emotionEmoji.textContent = '😊';
-                emotionText.textContent = 'Feeling Great!';
-                emotionSubtext.textContent = 'Your health and wealth are balanced';
-            } else if (combined >= 50) {
-                emotionEmoji.textContent = '😐';
-                emotionText.textContent = 'Doing Okay';
-                emotionSubtext.textContent = 'Room for improvement in both areas';
-            } else if (combined >= 35) {
-                emotionEmoji.textContent = '😔';
-                emotionText.textContent = 'Could Be Better';
-                emotionSubtext.textContent = 'Focus on one area to improve';
-            } else {
-                emotionEmoji.textContent = '😰';
-                emotionText.textContent = 'Needs Attention';
-                emotionSubtext.textContent = 'Your health and wealth need care';
-            }
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(0, 2, 8);
+            camera.lookAt(0, 0, 0);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            const pointLight = new THREE.PointLight(0x00d4ff, 0.5, 10);
+            pointLight.position.set(0, 2, 2);
+            scene.add(pointLight);
+            
+            // Create character
+            createCharacter();
+            
+            // Create particles
+            createParticles();
+            
+            // Start animation loop
+            animate();
+            
+            // Handle resize
+            window.addEventListener('resize', onWindowResize);
         }
         
-        // Achievement Popup System
-        function showAchievement(title, desc, icon = '🏆') {
-            const popup = document.getElementById('achievement-popup');
-            document.getElementById('achievement-icon').textContent = icon;
-            document.getElementById('achievement-title').textContent = title;
-            document.getElementById('achievement-desc').textContent = desc;
+        function createCharacter() {
+            characterGroup = new THREE.Group();
             
-            popup.classList.add('show');
+            // Materials
+            const skinMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffdbac,
+                shininess: 30
+            });
+            
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x00d4ff,
+                shininess: 50
+            });
+            
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00d4ff,
+                transparent: true,
+                opacity: 0.3
+            });
+            
+            // Head (large for chibi style)
+            const headGeometry = new THREE.SphereGeometry(0.6, 32, 32);
+            const head = new THREE.Mesh(headGeometry, skinMaterial);
+            head.position.y = 1.2;
+            head.castShadow = true;
+            characterGroup.add(head);
+            
+            // Eyes
+            const eyeGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+            const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.2, 1.25, 0.5);
+            characterGroup.add(leftEye);
+            
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(0.2, 1.25, 0.5);
+            characterGroup.add(rightEye);
+            
+            // Body
+            const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.5, 0.8, 32);
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 0.4;
+            body.castShadow = true;
+            characterGroup.add(body);
+            
+            // Arms
+            const armGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.6, 16);
+            
+            const leftArm = new THREE.Mesh(armGeometry, skinMaterial);
+            leftArm.position.set(-0.6, 0.6, 0);
+            leftArm.rotation.z = 0.3;
+            characterGroup.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(armGeometry, skinMaterial);
+            rightArm.position.set(0.6, 0.6, 0);
+            rightArm.rotation.z = -0.3;
+            characterGroup.add(rightArm);
+            
+            // Legs
+            const legGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.5, 16);
+            
+            const leftLeg = new THREE.Mesh(legGeometry, skinMaterial);
+            leftLeg.position.set(-0.25, -0.25, 0);
+            characterGroup.add(leftLeg);
+            
+            const rightLeg = new THREE.Mesh(legGeometry, skinMaterial);
+            rightLeg.position.set(0.25, -0.25, 0);
+            characterGroup.add(rightLeg);
+            
+            // Crown for special agents (level 4)
+            const crownGeometry = new THREE.CylinderGeometry(0.35, 0.25, 0.15, 5);
+            const crownMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffd700,
+                shininess: 100,
+                emissive: 0xffd700,
+                emissiveIntensity: 0.2
+            });
+            const crown = new THREE.Mesh(crownGeometry, crownMaterial);
+            crown.position.y = 1.85;
+            crown.visible = false; // Only show at level 4
+            crown.name = 'crown';
+            characterGroup.add(crown);
+            
+            // Glow effect
+            const glowGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow.name = 'glow';
+            characterGroup.add(glow);
+            
+            // Set initial scale
+            characterGroup.scale.set(currentScale, currentScale, currentScale);
+            
+            scene.add(characterGroup);
+        }
+        
+        function createParticles() {
+            const particleCount = 50;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 6;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 6;
+                
+                colors[i * 3] = 0;
+                colors[i * 3 + 1] = 0.83;
+                colors[i * 3 + 2] = 1;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.05,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = Date.now() * 0.001;
+            
+            if (characterGroup) {
+                // Idle animation - gentle bounce
+                characterGroup.position.y = Math.sin(time * 2) * 0.1;
+                
+                // Smooth scale transition
+                currentScale += (targetScale - currentScale) * 0.05;
+                characterGroup.scale.set(currentScale, currentScale, currentScale);
+                
+                // Rotate slowly
+                characterGroup.rotation.y = Math.sin(time * 0.5) * 0.2;
+                
+                // Level up glow effect
+                if (isLevelingUp) {
+                    glowIntensity = Math.sin(time * 10) * 0.5 + 0.5;
+                    const glow = characterGroup.getObjectByName('glow');
+                    if (glow) {
+                        glow.material.opacity = glowIntensity * 0.5;
+                        glow.scale.setScalar(1 + glowIntensity * 0.3);
+                    }
+                }
+            }
+            
+            // Animate particles
+            if (particles) {
+                particles.rotation.y += 0.002;
+                const positions = particles.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 1] += Math.sin(time + positions[i]) * 0.002;
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        function onWindowResize() {
+            const container = document.getElementById('character-canvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+        
+        // ============================================
+        // GROWTH SYSTEM
+        // ============================================
+        
+        function calculateGrowthStage() {
+            const combinedScore = Math.round((characterStats.health + characterStats.wealth) / 2);
+            
+            // Find current stage
+            let currentStage = GROWTH_STAGES[0];
+            for (const stage of GROWTH_STAGES) {
+                if (combinedScore >= stage.minScore) {
+                    currentStage = stage;
+                }
+            }
+            
+            // Check for level up
+            if (currentStage.level > characterStats.level) {
+                triggerLevelUp(currentStage);
+            }
+            
+            characterStats.level = currentStage.level;
+            characterStats.stage = currentStage.name;
+            
+            // Update target scale
+            targetScale = currentStage.scale;
+            
+            return { combinedScore, currentStage };
+        }
+        
+        function triggerLevelUp(newStage) {
+            isLevelingUp = true;
+            
+            // Show toast
+            const toast = document.getElementById('levelUpToast');
+            toast.textContent = `🎉 Level Up! Your character is now a ${newStage.name}!`;
+            toast.classList.add('show');
+            
+            // Pulse effect on canvas
+            const canvas = document.getElementById('character-canvas');
+            canvas.classList.add('leveling-up');
+            
+            // Show crown if level 4
+            if (newStage.level === 4) {
+                const crown = characterGroup.getObjectByName('crown');
+                if (crown) crown.visible = true;
+            }
             
             setTimeout(() => {
-                popup.classList.remove('show');
-            }, 4000);
+                isLevelingUp = false;
+                toast.classList.remove('show');
+                canvas.classList.remove('leveling-up');
+                
+                // Reset glow
+                const glow = characterGroup.getObjectByName('glow');
+                if (glow) {
+                    glow.material.opacity = 0.3;
+                    glow.scale.setScalar(1);
+                }
+            }, 3000);
         }
         
-        // Check for milestones and show achievements
-        function checkMilestones() {
-            const savings = 12450;
-            const streak = 12;
+        function updateGrowthUI() {
+            const { combinedScore, currentStage } = calculateGrowthStage();
             
-            // Example milestone checks
-            if (savings >= 12000 && savings < 13000) {
-                setTimeout(() => {
-                    showAchievement('Savings Milestone!', 'You\'ve saved over $12,000! Amazing discipline!', '💰');
-                }, 2000);
-            }
+            // Calculate progress to next level
+            const nextStage = GROWTH_STAGES[currentStage.level] || currentStage;
+            const progressInStage = (combinedScore - currentStage.minScore) / (currentStage.maxScore - currentStage.minScore);
+            const progressPercent = Math.min(100, Math.max(0, progressInStage * 100));
             
-            if (streak >= 10) {
-                setTimeout(() => {
-                    showAchievement('Streak Master!', '10+ day streak! You\'re building great habits!', '🔥');
-                }, 5000);
+            // Update UI elements
+            document.getElementById('level-badge').textContent = `Level ${currentStage.level}`;
+            document.getElementById('growth-stage').textContent = currentStage.name;
+            document.getElementById('growth-score').textContent = `Score: ${combinedScore}/100`;
+            document.getElementById('progress-bar').style.width = `${combinedScore}%`;
+            
+            document.getElementById('health-score').textContent = characterStats.health;
+            document.getElementById('wealth-score').textContent = characterStats.wealth;
+            document.getElementById('combined-score').textContent = combinedScore;
+            
+            const toNextLevel = Math.max(0, currentStage.maxScore - combinedScore);
+            document.getElementById('next-level').textContent = toNextLevel;
+            
+            // Update modal stats
+            document.getElementById('modal-level').textContent = `Level ${currentStage.level} (${currentStage.name})`;
+            document.getElementById('modal-stage').textContent = currentStage.name;
+            document.getElementById('modal-health').textContent = characterStats.health;
+            document.getElementById('modal-wealth').textContent = characterStats.wealth;
+            document.getElementById('modal-combined').textContent = combinedScore;
+            document.getElementById('modal-progress').textContent = `${Math.round(progressPercent)}%`;
+            document.getElementById('modal-tasks').textContent = characterStats.tasksCompleted;
+            document.getElementById('modal-deals').textContent = characterStats.dealsClosed;
+        }
+        
+        function showCharacterStats() {
+            document.getElementById('characterModal').classList.add('active');
+        }
+        
+        function closeCharacterStats(event) {
+            if (!event || event.target.id === 'characterModal') {
+                document.getElementById('characterModal').classList.remove('active');
             }
         }
         
-        // Toggle Goal Modal (placeholder)
-        function toggleGoalModal() {
-            showAchievement('Coming Soon!', 'Goal setting modal will be available in the next update!', '🎯');
+        // ============================================
+        // API INTEGRATION
+        // ============================================
+        
+        const API_BASE = '/api';
+        let isRefreshing = false;
+        let autoRefreshInterval = null;
+        
+        async function loadData() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+            
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.classList.add('spinning');
+            
+            try {
+                // Fetch all data in parallel
+                const [agentsRes, tasksRes, statsRes, dealsRes] = await Promise.allSettled([
+                    fetch(`${API_BASE}/agents`),
+                    fetch(`${API_BASE}/tasks`),
+                    fetch(`${API_BASE}/stats`),
+                    fetch(`${API_BASE}/deals`)
+                ]);
+                
+                // Process agents data
+                if (agentsRes.status === 'fulfilled' && agentsRes.value.ok) {
+                    const agentsData = await agentsRes.value.json();
+                    updateAgentsStats(agentsData);
+                } else {
+                    updateAgentsStats({ agents: [], total: 23, active: 18 });
+                }
+                
+                // Process tasks data
+                if (tasksRes.status === 'fulfilled' && tasksRes.value.ok) {
+                    const tasksData = await tasksRes.value.json();
+                    updateTasksStats(tasksData);
+                    // Update character stats based on tasks
+                    const completedTasks = tasksData.tasks ? tasksData.tasks.filter(t => t.status === 'completed').length : 47;
+                    characterStats.tasksCompleted = completedTasks;
+                    characterStats.health = Math.min(100, 50 + Math.floor(completedTasks / 2));
+                } else {
+                    updateTasksStats({ tasks: [], total: 47, pending: 12 });
+                }
+                
+                // Process stats data
+                if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+                    const statsData = await statsRes.value.json();
+                    updateTokenStats(statsData);
+                } else {
+                    updateTokenStats({ tokens: 442000, cost: 0.52 });
+                }
+                
+                // Process deals data
+                if (dealsRes.status === 'fulfilled' && dealsRes.value.ok) {
+                    const dealsData = await dealsRes.value.json();
+                    updateDealsStats(dealsData);
+                    // Update character stats based on deals
+                    const closedDeals = dealsData.deals ? dealsData.deals.filter(d => d.status === 'closed').length : 12;
+                    characterStats.dealsClosed = closedDeals;
+                    characterStats.wealth = Math.min(100, 40 + Math.floor(closedDeals * 3));
+                } else {
+                    updateDealsStats({ deals: [], total: 30, new: 5 });
+                }
+                
+                // Update growth system
+                updateGrowthUI();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Use fallback data
+                updateAgentsStats({ agents: [], total: 23, active: 18 });
+                updateTasksStats({ tasks: [], total: 47, pending: 12 });
+                updateTokenStats({ tokens: 442000, cost: 0.52 });
+                updateDealsStats({ deals: [], total: 30, new: 5 });
+                updateGrowthUI();
+            } finally {
+                isRefreshing = false;
+                refreshBtn.classList.remove('spinning');
+            }
+        }
+        
+        function updateAgentsStats(data) {
+            const total = data.total || (data.agents ? data.agents.length : 23);
+            const active = data.active || (data.agents ? data.agents.filter(a => a.status === 'active').length : 18);
+            
+            document.getElementById('totalAgents').textContent = total;
+            document.getElementById('activeAgents').textContent = active;
+        }
+        
+        function updateTasksStats(data) {
+            const total = data.total || (data.tasks ? data.tasks.length : 47);
+            const pending = data.pending || (data.tasks ? data.tasks.filter(t => t.status === 'pending').length : 12);
+            
+            document.getElementById('totalTasks').textContent = total;
+            document.getElementById('pendingTasks').textContent = pending;
+        }
+        
+        function updateTokenStats(data) {
+            const tokens = data.tokens || data.totalTokens || 442000;
+            const cost = data.cost || data.totalCost || 0.52;
+            
+            document.getElementById('totalTokens').textContent = formatNumber(tokens);
+            document.getElementById('tokenCost').textContent = '$' + cost.toFixed(2);
+        }
+        
+        function updateDealsStats(data) {
+            const total = data.total || (data.deals ? data.deals.length : 30);
+            const newDeals = data.new || (data.deals ? data.deals.filter(d => d.status === 'new').length : 5);
+            
+            document.getElementById('totalDeals').textContent = total;
+            document.getElementById('newDeals').textContent = newDeals;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
+            return num.toString();
+        }
+        
+        function refreshData() {
+            loadData();
+        }
+        
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                console.log('[Auto-Refresh] Reloading data...');
+                loadData();
+            }, 30 * 60 * 1000); // 30 minutes
         }
         
         // Initialize
-        checkMilestones();
+        document.addEventListener('DOMContentLoaded', () => {
+            initThreeJS();
+            loadData();
+            startAutoRefresh();
+        });
         
-        // Simulate real-time updates
-        setInterval(() => {
-            // Randomly fluctuate health/wealth bars slightly
-            const bars = ['exercise-bar', 'sleep-bar', 'calories-bar', 'savings-bar', 'invest-bar', 'gig-bar'];
-            const randomBar = bars[Math.floor(Math.random() * bars.length)];
-            const bar = document.getElementById(randomBar);
-            if (bar) {
-                const currentWidth = parseInt(bar.style.width);
-                const newWidth = Math.min(100, Math.max(0, currentWidth + (Math.random() > 0.5 ? 1 : -1)));
-                bar.style.width = newWidth + '%';
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                loadData();
             }
-        }, 5000);
+        });
     </script>
 </body>
 </html>
