@@ -524,6 +524,16 @@
             50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
         }
         
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        
         /* Loading overlay */
         .loading-overlay {
             position: fixed;
@@ -1037,21 +1047,51 @@
         }
         
         // ============================================
-        // ENVIRONMENT GROWTH SYSTEM
+        // GRANULAR ENVIRONMENT GROWTH SYSTEM
         // ============================================
         
         let environmentObjects = [];
-        let currentWealthTier = 0;
+        let unlockedItems = new Set();
         let currentHealthTier = 0;
         
-        // Wealth Tiers ($0-5K, $5K-15K, $15K-30K, $30K-50K, $50K-100K, $100K+)
-        const WEALTH_TIERS = [
-            { min: 0, max: 5, name: 'Small Room', items: ['basicFloor', 'basicWalls'] },
-            { min: 5, max: 15, name: 'Cozy Room', items: ['carpet', 'plant', 'lamp'] },
-            { min: 15, max: 30, name: 'Nice Apartment', items: ['sofa', 'deskLamp', 'bookshelf', 'rug'] },
-            { min: 30, max: 50, name: 'Modern Home', items: ['computerDesk', 'tv', 'coffeeTable', 'artwork'] },
-            { min: 50, max: 100, name: 'Big House', items: ['garden', 'patio', 'fountain', 'statue'] },
-            { min: 100, max: 999, name: 'Mansion', items: ['pool', 'luxuryCar', 'chandelier', 'grandPiano'] }
+        // Granular Wealth Milestones ($0-30K+)
+        const WEALTH_MILESTONES = [
+            // $0-5K: Every $1K
+            { threshold: 1, name: 'Basic Light', type: 'basicLight', emoji: '💡', tier: 1 },
+            { threshold: 2, name: 'Small Plant', type: 'smallPlant', emoji: '🌱', tier: 1 },
+            { threshold: 3, name: 'Rug', type: 'rug', emoji: '🧶', tier: 1 },
+            { threshold: 4, name: 'Wall Poster', type: 'poster', emoji: '🖼️', tier: 1 },
+            { threshold: 5, name: 'Small Table', type: 'smallTable', emoji: '🛏️', tier: 1 },
+            
+            // $5K-15K: Every $2K
+            { threshold: 7, name: 'Better Lamp', type: 'betterLamp', emoji: '🛋️', tier: 2 },
+            { threshold: 9, name: 'Bookshelf', type: 'bookshelf', emoji: '📚', tier: 2 },
+            { threshold: 11, name: 'Small TV', type: 'smallTV', emoji: '📺', tier: 2 },
+            { threshold: 13, name: 'Comfy Chair', type: 'comfyChair', emoji: '🪑', tier: 2 },
+            { threshold: 15, name: 'Coffee Table', type: 'coffeeTable', emoji: '☕', tier: 2 },
+            
+            // $15K-30K: Every $3K
+            { threshold: 18, name: 'Computer Desk', type: 'computerDesk', emoji: '💻', tier: 3 },
+            { threshold: 21, name: 'Gaming Chair', type: 'gamingChair', emoji: '🎮', tier: 3 },
+            { threshold: 24, name: 'Big TV', type: 'bigTV', emoji: '📺', tier: 3 },
+            { threshold: 27, name: 'Sound System', type: 'soundSystem', emoji: '🔊', tier: 3 },
+            { threshold: 30, name: 'Room Expansion', type: 'roomExpansion', emoji: '🏠', tier: 3 },
+            
+            // $30K+: Every $5K (Major upgrades)
+            { threshold: 35, name: 'Garden Start', type: 'gardenStart', emoji: '🌳', tier: 4 },
+            { threshold: 40, name: 'Patio', type: 'patio', emoji: '🏡', tier: 4 },
+            { threshold: 45, name: 'Fountain', type: 'fountain', emoji: '⛲', tier: 4 },
+            { threshold: 50, name: 'Small Pool', type: 'smallPool', emoji: '🏊', tier: 4 },
+            { threshold: 55, name: 'Outdoor Furniture', type: 'outdoorFurniture', emoji: '🪑', tier: 4 },
+            { threshold: 60, name: 'Garage', type: 'garage', emoji: '🚗', tier: 4 },
+            { threshold: 65, name: 'Home Gym', type: 'homeGym', emoji: '💪', tier: 4 },
+            { threshold: 70, name: 'Wine Cellar', type: 'wineCellar', emoji: '🍷', tier: 4 },
+            { threshold: 75, name: 'Theater Room', type: 'theaterRoom', emoji: '🎬', tier: 4 },
+            { threshold: 80, name: 'Guest House', type: 'guestHouse', emoji: '🏠', tier: 4 },
+            { threshold: 85, name: 'Tennis Court', type: 'tennisCourt', emoji: '🎾', tier: 4 },
+            { threshold: 90, name: 'Helipad', type: 'helipad', emoji: '🚁', tier: 4 },
+            { threshold: 95, name: 'Private Dock', type: 'privateDock', emoji: '⚓', tier: 4 },
+            { threshold: 100, name: 'Mega Mansion', type: 'megaMansion', emoji: '🏰', tier: 4 }
         ];
         
         // Health Tiers (Low, Medium, High)
@@ -1062,31 +1102,22 @@
         ];
         
         function initEnvironment() {
-            // Clear existing environment
-            environmentObjects.forEach(obj => scene.remove(obj));
-            environmentObjects = [];
-            
-            // Create base floor based on wealth tier
-            createBaseEnvironment();
+            // Don't clear - we want to keep unlocked items
+            // Just ensure base exists
+            if (!environmentObjects.find(obj => obj.name === 'floor')) {
+                createBaseEnvironment();
+            }
         }
         
         function createBaseEnvironment() {
-            // Room floor - expands with wealth
-            const roomSizes = [4, 6, 8, 10, 14, 20]; // Size increases with wealth tier
-            const roomSize = roomSizes[currentWealthTier] || 4;
+            // Base floor - starts small
+            const floorGeometry = new THREE.PlaneGeometry(4, 4);
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x333333, 
+                roughness: 0.9 
+            });
             
-            // Main floor
-            const floorGeometry = new THREE.PlaneGeometry(roomSize, roomSize);
-            const floorMaterials = [
-                new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 }), // Concrete
-                new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.8 }), // Wood
-                new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.7 }), // Nice wood
-                new THREE.MeshStandardMaterial({ color: 0xc4a77d, roughness: 0.6 }), // Premium wood
-                new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.5 }), // Gold accent
-                new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.3 }) // Marble
-            ];
-            
-            const floor = new THREE.Mesh(floorGeometry, floorMaterials[currentWealthTier] || floorMaterials[0]);
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
             floor.rotation.x = -Math.PI / 2;
             floor.position.y = -1;
             floor.receiveShadow = true;
@@ -1094,45 +1125,729 @@
             scene.add(floor);
             environmentObjects.push(floor);
             
-            // Add wealth-based items
-            addWealthItems();
-            
-            // Add health-based nature elements
-            addHealthItems();
-            
             // Update lighting based on health
             updateEnvironmentLighting();
         }
         
-        function addWealthItems() {
-            const items = WEALTH_TIERS[currentWealthTier]?.items || [];
+        function checkAndUnlockItems(wealthValue) {
+            const wealthInK = wealthValue;
+            let newItemsUnlocked = false;
             
-            items.forEach((itemType, index) => {
-                setTimeout(() => {
-                    const item = createItem(itemType);
-                    if (item) {
-                        // Animate item appearing
-                        item.scale.set(0, 0, 0);
-                        scene.add(item);
-                        environmentObjects.push(item);
-                        
-                        // Pop-in animation
-                        const targetScale = 1;
-                        const animateIn = () => {
-                            if (item.scale.x < targetScale) {
-                                item.scale.x += 0.05;
-                                item.scale.y += 0.05;
-                                item.scale.z += 0.05;
-                                requestAnimationFrame(animateIn);
-                            }
-                        };
-                        animateIn();
-                    }
-                }, index * 200); // Stagger appearance
+            WEALTH_MILESTONES.forEach(milestone => {
+                if (wealthInK >= milestone.threshold && !unlockedItems.has(milestone.type)) {
+                    unlockedItems.add(milestone.type);
+                    unlockItem(milestone);
+                    newItemsUnlocked = true;
+                }
             });
+            
+            // Update room size based on wealth tier
+            updateRoomSize(wealthInK);
+            
+            return newItemsUnlocked;
         }
         
+        function unlockItem(milestone) {
+            const item = createGranularItem(milestone.type);
+            if (item) {
+                // Animate item appearing
+                item.scale.set(0, 0, 0);
+                scene.add(item);
+                environmentObjects.push(item);
+                
+                // Pop-in animation with bounce
+                const animateIn = () => {
+                    if (item.scale.x < 1) {
+                        item.scale.x += 0.08;
+                        item.scale.y += 0.08;
+                        item.scale.z += 0.08;
+                        requestAnimationFrame(animateIn);
+                    } else {
+                        // Slight bounce effect
+                        item.scale.set(1.1, 1.1, 1.1);
+                        setTimeout(() => {
+                            item.scale.set(1, 1, 1);
+                        }, 100);
+                    }
+                };
+                animateIn();
+                
+                // Show notification
+                showItemUnlockNotification(milestone);
+            }
+        }
+        
+        function showItemUnlockNotification(milestone) {
+            // Create floating notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                background: linear-gradient(135deg, #00d4ff, #0099cc);
+                color: #000;
+                padding: 15px 20px;
+                border-radius: 12px;
+                font-weight: 600;
+                z-index: 1000;
+                animation: slideIn 0.5s ease;
+                box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            `;
+            notification.innerHTML = `
+                <div style="font-size: 24px; margin-bottom: 5px;">${milestone.emoji}</div>
+                <div>Unlocked: ${milestone.name}</div>
+                <div style="font-size: 12px; opacity: 0.8;">$${milestone.threshold}K milestone</div>
+            `;
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.5s ease';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+        
+        function updateRoomSize(wealthInK) {
+            const floor = environmentObjects.find(obj => obj.name === 'floor');
+            if (!floor) return;
+            
+            // Determine target size based on wealth
+            let targetSize = 4;
+            if (wealthInK >= 30) targetSize = 12;
+            else if (wealthInK >= 20) targetSize = 10;
+            else if (wealthInK >= 15) targetSize = 8;
+            else if (wealthInK >= 10) targetSize = 6;
+            else if (wealthInK >= 5) targetSize = 5;
+            
+            // Update floor size
+            floor.geometry.dispose();
+            floor.geometry = new THREE.PlaneGeometry(targetSize, targetSize);
+            
+            // Update floor material based on wealth
+            if (wealthInK >= 50) {
+                floor.material.color.setHex(0xffffff);
+                floor.material.metalness = 0.3;
+                floor.material.roughness = 0.3;
+            } else if (wealthInK >= 30) {
+                floor.material.color.setHex(0xd4af37);
+                floor.material.metalness = 0.1;
+                floor.material.roughness = 0.5;
+            } else if (wealthInK >= 15) {
+                floor.material.color.setHex(0xc4a77d);
+                floor.material.roughness = 0.6;
+            } else if (wealthInK >= 5) {
+                floor.material.color.setHex(0x5c4a3a);
+                floor.material.roughness = 0.8;
+            }
+        }
+        
+        function createGranularItem(type) {
+            switch(type) {
+                // Tier 1: $1K-5K
+                case 'basicLight':
+                    return createBasicLight();
+                case 'smallPlant':
+                    return createSmallPlant();
+                case 'rug':
+                    return createRug();
+                case 'poster':
+                    return createPoster();
+                case 'smallTable':
+                    return createSmallTable();
+                
+                // Tier 2: $7K-15K
+                case 'betterLamp':
+                    return createBetterLamp();
+                case 'bookshelf':
+                    return createBookshelf();
+                case 'smallTV':
+                    return createSmallTV();
+                case 'comfyChair':
+                    return createComfyChair();
+                case 'coffeeTable':
+                    return createCoffeeTable();
+                
+                // Tier 3: $18K-30K
+                case 'computerDesk':
+                    return createComputerDesk();
+                case 'gamingChair':
+                    return createGamingChair();
+                case 'bigTV':
+                    return createBigTV();
+                case 'soundSystem':
+                    return createSoundSystem();
+                case 'roomExpansion':
+                    return createRoomExpansionMarker();
+                
+                // Tier 4: $35K+
+                case 'gardenStart':
+                    return createGardenStart();
+                case 'patio':
+                    return createPatio();
+                case 'fountain':
+                    return createFountain();
+                case 'smallPool':
+                    return createSmallPool();
+                case 'outdoorFurniture':
+                    return createOutdoorFurniture();
+                case 'garage':
+                    return createGarage();
+                case 'homeGym':
+                    return createHomeGym();
+                case 'wineCellar':
+                    return createWineCellar();
+                case 'theaterRoom':
+                    return createTheaterRoom();
+                case 'guestHouse':
+                    return createGuestHouse();
+                case 'tennisCourt':
+                    return createTennisCourt();
+                case 'helipad':
+                    return createHelipad();
+                case 'privateDock':
+                    return createPrivateDock();
+                case 'megaMansion':
+                    return createMegaMansionMarker();
+                
+                default:
+                    return null;
+            }
+        }
+        
+        // Tier 1 Items ($1K-5K)
+        function createBasicLight() {
+            const group = new THREE.Group();
+            
+            const bulb = new THREE.Mesh(
+                new THREE.SphereGeometry(0.15, 8, 8),
+                new THREE.MeshBasicMaterial({ color: 0xffffaa })
+            );
+            bulb.position.set(0, 2, 0);
+            group.add(bulb);
+            
+            const light = new THREE.PointLight(0xffffaa, 0.3, 4);
+            light.position.set(0, 2, 0);
+            group.add(light);
+            
+            return group;
+        }
+        
+        function createSmallPlant() {
+            const group = new THREE.Group();
+            
+            // Pot
+            const pot = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.1, 0.2, 6),
+                new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+            );
+            pot.position.y = 0.1;
+            group.add(pot);
+            
+            // Plant
+            const plant = new THREE.Mesh(
+                new THREE.SphereGeometry(0.2, 6, 6),
+                new THREE.MeshStandardMaterial({ color: 0x228b22 })
+            );
+            plant.position.y = 0.35;
+            group.add(plant);
+            
+            group.position.set(1.5, -1, 1);
+            return group;
+        }
+        
+        function createRug() {
+            const rug = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.5, 2),
+                new THREE.MeshStandardMaterial({ color: 0x8b0000, roughness: 1 })
+            );
+            rug.rotation.x = -Math.PI / 2;
+            rug.position.set(0, -0.98, 0);
+            return rug;
+        }
+        
+        function createPoster() {
+            const group = new THREE.Group();
+            
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(0.6, 0.8, 0.02),
+                new THREE.MeshStandardMaterial({ color: 0x444444 })
+            );
+            group.add(frame);
+            
+            const poster = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.5, 0.7),
+                new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(Math.random(), 0.7, 0.5) })
+            );
+            poster.position.z = 0.02;
+            group.add(poster);
+            
+            group.position.set(-1.8, 0.5, -1.9);
+            return group;
+        }
+        
+        function createSmallTable() {
+            const group = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({ color: 0x654321 });
+            
+            const top = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.5), material);
+            top.position.y = 0.4;
+            top.castShadow = true;
+            group.add(top);
+            
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.4), material);
+            leg.position.y = 0.2;
+            group.add(leg);
+            
+            group.position.set(-1, -1, 1);
+            return group;
+        }
+        
+        // Tier 2 Items ($7K-15K)
+        function createBetterLamp() {
+            const group = new THREE.Group();
+            
+            const base = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.2, 0.1, 8),
+                new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.5 })
+            );
+            base.position.y = 0.05;
+            group.add(base);
+            
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            pole.position.y = 0.6;
+            group.add(pole);
+            
+            const shade = new THREE.Mesh(
+                new THREE.ConeGeometry(0.3, 0.4, 8, 1, true),
+                new THREE.MeshStandardMaterial({ color: 0xffdd88, emissive: 0xffaa00, emissiveIntensity: 0.3 })
+            );
+            shade.position.y = 1.1;
+            group.add(shade);
+            
+            const light = new THREE.PointLight(0xffdd88, 0.5, 5);
+            light.position.y = 1;
+            group.add(light);
+            
+            group.position.set(1.5, -1, -1.5);
+            return group;
+        }
+        
+        function createSmallTV() {
+            const group = new THREE.Group();
+            
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(0.6, 0.4, 0.05),
+                new THREE.MeshStandardMaterial({ color: 0x111111 })
+            );
+            body.position.y = 0.5;
+            group.add(body);
+            
+            const screen = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.5, 0.3),
+                new THREE.MeshBasicMaterial({ color: 0x222244 })
+            );
+            screen.position.set(0, 0.5, 0.03);
+            group.add(screen);
+            
+            const stand = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.2, 0.15),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            stand.position.y = 0.2;
+            group.add(stand);
+            
+            group.position.set(0, -1, -1.8);
+            return group;
+        }
+        
+        function createComfyChair() {
+            const group = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({ color: 0x4169e1, roughness: 0.8 });
+            
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.6), material);
+            seat.position.y = 0.3;
+            seat.castShadow = true;
+            group.add(seat);
+            
+            const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.1), material);
+            back.position.set(0, 0.6, -0.25);
+            back.castShadow = true;
+            group.add(back);
+            
+            group.position.set(-1.2, -1, 0.5);
+            return group;
+        }
+        
+        // Tier 3 Items ($18K-30K)
+        function createGamingChair() {
+            const group = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.6 });
+            
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.5), material);
+            seat.position.y = 0.4;
+            group.add(seat);
+            
+            const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.1), material);
+            back.position.set(0, 0.7, -0.2);
+            group.add(back);
+            
+            // Racing stripes
+            const stripe = new THREE.Mesh(
+                new THREE.BoxGeometry(0.1, 0.6, 0.02),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            stripe.position.set(0, 0.7, -0.15);
+            group.add(stripe);
+            
+            group.position.set(1.8, -1, -0.5);
+            return group;
+        }
+        
+        function createBigTV() {
+            const group = new THREE.Group();
+            
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(1.2, 0.7, 0.05),
+                new THREE.MeshStandardMaterial({ color: 0x111111 })
+            );
+            body.position.y = 0.8;
+            group.add(body);
+            
+            const screen = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.1, 0.6),
+                new THREE.MeshBasicMaterial({ color: 0x000033 })
+            );
+            screen.position.set(0, 0.8, 0.03);
+            group.add(screen);
+            
+            const stand = new THREE.Mesh(
+                new THREE.BoxGeometry(0.3, 0.3, 0.2),
+                new THREE.MeshStandardMaterial({ color: 0x222222 })
+            );
+            stand.position.y = 0.35;
+            group.add(stand);
+            
+            group.position.set(0, -1, -2.5);
+            return group;
+        }
+        
+        function createSoundSystem() {
+            const group = new THREE.Group();
+            const speakerMaterial = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            
+            // Left speaker
+            const leftSpeaker = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.5, 0.25), speakerMaterial);
+            leftSpeaker.position.set(-1, 0.25, -1);
+            group.add(leftSpeaker);
+            
+            // Right speaker
+            const rightSpeaker = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.5, 0.25), speakerMaterial);
+            rightSpeaker.position.set(1, 0.25, -1);
+            group.add(rightSpeaker);
+            
+            // Subwoofer
+            const sub = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), speakerMaterial);
+            sub.position.set(0, 0.2, 1.5);
+            group.add(sub);
+            
+            return group;
+        }
+        
+        function createRoomExpansionMarker() {
+            // Visual indicator that room expanded
+            const group = new THREE.Group();
+            
+            const marker = new THREE.Mesh(
+                new THREE.RingGeometry(3.5, 4, 32),
+                new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.3, side: THREE.DoubleSide })
+            );
+            marker.rotation.x = -Math.PI / 2;
+            marker.position.y = -0.9;
+            group.add(marker);
+            
+            return group;
+        }
+        
+        // Tier 4 Items ($35K+)
+        function createGardenStart() {
+            const group = new THREE.Group();
+            
+            for (let i = 0; i < 3; i++) {
+                const tree = createTree();
+                tree.position.set(4 + i * 1.5, -1, 2 + Math.random());
+                tree.scale.set(0.7, 0.7, 0.7);
+                group.add(tree);
+            }
+            
+            return group;
+        }
+        
+        function createPatio() {
+            const group = new THREE.Group();
+            
+            const patio = new THREE.Mesh(
+                new THREE.BoxGeometry(4, 0.1, 3),
+                new THREE.MeshStandardMaterial({ color: 0x888888 })
+            );
+            patio.position.set(5, -0.95, 0);
+            group.add(patio);
+            
+            return group;
+        }
+        
+        function createSmallPool() {
+            const group = new THREE.Group();
+            
+            const pool = new THREE.Mesh(
+                new THREE.BoxGeometry(3, 0.8, 2),
+                new THREE.MeshStandardMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.6 })
+            );
+            pool.position.set(6, -0.6, 3);
+            group.add(pool);
+            
+            const border = new THREE.Mesh(
+                new THREE.BoxGeometry(3.3, 0.9, 2.3),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            border.position.set(6, -0.65, 3);
+            group.add(border);
+            
+            return group;
+        }
+        
+        function createOutdoorFurniture() {
+            const group = new THREE.Group();
+            
+            // Table
+            const table = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.5, 0.5, 0.05, 16),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            table.position.set(5, 0.4, 0);
+            group.add(table);
+            
+            // Chairs
+            for (let i = 0; i < 4; i++) {
+                const angle = (i / 4) * Math.PI * 2;
+                const chair = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 0.4, 0.3),
+                    new THREE.MeshStandardMaterial({ color: 0x654321 })
+                );
+                chair.position.set(
+                    5 + Math.cos(angle) * 1,
+                    0.2,
+                    Math.sin(angle) * 1
+                );
+                group.add(chair);
+            }
+            
+            return group;
+        }
+        
+        function createGarage() {
+            const group = new THREE.Group();
+            
+            const garage = new THREE.Mesh(
+                new THREE.BoxGeometry(4, 2.5, 5),
+                new THREE.MeshStandardMaterial({ color: 0xcccccc })
+            );
+            garage.position.set(-6, 0.25, 0);
+            group.add(garage);
+            
+            // Door
+            const door = new THREE.Mesh(
+                new THREE.BoxGeometry(2.5, 2, 0.1),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            door.position.set(-6, 0.5, 2.5);
+            group.add(door);
+            
+            return group;
+        }
+        
+        function createHomeGym() {
+            const group = new THREE.Group();
+            
+            // Treadmill
+            const treadmill = new THREE.Mesh(
+                new THREE.BoxGeometry(0.4, 0.3, 1.2),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            treadmill.position.set(-2, 0.15, -3);
+            group.add(treadmill);
+            
+            // Weights
+            const weights = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 0.4, 0.3),
+                new THREE.MeshStandardMaterial({ color: 0x111111 })
+            );
+            weights.position.set(-3, 0.2, -3);
+            group.add(weights);
+            
+            return group;
+        }
+        
+        function createWineCellar() {
+            const group = new THREE.Group();
+            
+            const rack = new THREE.Mesh(
+                new THREE.BoxGeometry(1.5, 2, 0.5),
+                new THREE.MeshStandardMaterial({ color: 0x4a3728 })
+            );
+            rack.position.set(-2.5, 0, -2.5);
+            group.add(rack);
+            
+            return group;
+        }
+        
+        function createTheaterRoom() {
+            const group = new THREE.Group();
+            
+            // Projector screen
+            const screen = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 1.2, 0.05),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            screen.position.set(0, 1.5, -3.5);
+            group.add(screen);
+            
+            // Seats
+            for (let i = 0; i < 3; i++) {
+                const seat = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.5, 0.6),
+                    new THREE.MeshStandardMaterial({ color: 0x8b0000 })
+                );
+                seat.position.set(-1 + i * 1, 0.25, 2);
+                group.add(seat);
+            }
+            
+            return group;
+        }
+        
+        function createGuestHouse() {
+            const group = new THREE.Group();
+            
+            const house = new THREE.Mesh(
+                new THREE.BoxGeometry(4, 2.5, 4),
+                new THREE.MeshStandardMaterial({ color: 0xf5f5dc })
+            );
+            house.position.set(8, 0.25, -5);
+            group.add(house);
+            
+            // Roof
+            const roof = new THREE.Mesh(
+                new THREE.ConeGeometry(3, 1.5, 4),
+                new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+            );
+            roof.position.set(8, 2, -5);
+            roof.rotation.y = Math.PI / 4;
+            group.add(roof);
+            
+            return group;
+        }
+        
+        function createTennisCourt() {
+            const group = new THREE.Group();
+            
+            const court = new THREE.Mesh(
+                new THREE.BoxGeometry(8, 0.1, 12),
+                new THREE.MeshStandardMaterial({ color: 0x228b22 })
+            );
+            court.position.set(-10, -0.95, 0);
+            group.add(court);
+            
+            // Net
+            const net = new THREE.Mesh(
+                new THREE.BoxGeometry(0.05, 1, 12),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            net.position.set(-10, 0, 0);
+            group.add(net);
+            
+            return group;
+        }
+        
+        function createHelipad() {
+            const group = new THREE.Group();
+            
+            const pad = new THREE.Mesh(
+                new THREE.CylinderGeometry(2, 2, 0.1, 32),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            pad.position.set(10, 3, -8);
+            group.add(pad);
+            
+            // H marker
+            const h = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 0.05, 0.2),
+                new THREE.MeshBasicMaterial({ color: 0xffff00 })
+            );
+            h.position.set(10, 3.05, -8);
+            group.add(h);
+            
+            const v = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.05, 0.8),
+                new THREE.MeshBasicMaterial({ color: 0xffff00 })
+            );
+            v.position.set(10, 3.05, -8);
+            group.add(v);
+            
+            return group;
+        }
+        
+        function createPrivateDock() {
+            const group = new THREE.Group();
+            
+            const dock = new THREE.Mesh(
+                new THREE.BoxGeometry(3, 0.2, 8),
+                new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+            );
+            dock.position.set(12, -0.9, 5);
+            group.add(dock);
+            
+            return group;
+        }
+        
+        function createMegaMansionMarker() {
+            const group = new THREE.Group();
+            
+            // Grand entrance marker
+            const pillars = new THREE.Group();
+            
+            for (let i = 0; i < 4; i++) {
+                const pillar = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.3, 0.3, 4, 8),
+                    new THREE.MeshStandardMaterial({ color: 0xffffff })
+                );
+                pillar.position.set(-3 + i * 2, 1, -8);
+                pillars.add(pillar);
+            }
+            
+            group.add(pillars);
+            
+            return group;
+        }
+        
+        // Legacy item creators (kept for compatibility)
+        function createCarpet() { return createRug(); }
+        function createPottedPlant() { return createSmallPlant(); }
+        function createLamp() { return createBetterLamp(); }
+        function createSofa() { return createComfyChair(); }
+        function createTV() { return createBigTV(); }
+        
         function addHealthItems() {
+            // Remove existing nature items
+            environmentObjects = environmentObjects.filter(obj => {
+                if (obj.name === 'nature') {
+                    scene.remove(obj);
+                    return false;
+                }
+                return true;
+            });
+            
             // Nature elements based on health tier
             const treeCount = currentHealthTier * 2; // 0, 2, 4 trees
             const bushCount = currentHealthTier * 3; // 0, 3, 6 bushes
@@ -1140,12 +1855,13 @@
             // Add trees
             for (let i = 0; i < treeCount; i++) {
                 const angle = (i / treeCount) * Math.PI * 2;
-                const radius = 5 + currentWealthTier;
+                const radius = 5 + Math.floor(unlockedItems.size / 5); // Expand as items unlock
                 const x = Math.cos(angle) * radius;
                 const z = Math.sin(angle) * radius;
                 
                 const tree = createTree();
                 tree.position.set(x, -1, z);
+                tree.name = 'nature';
                 
                 // Animate in
                 tree.scale.set(0, 0, 0);
@@ -1168,12 +1884,13 @@
             // Add bushes
             for (let i = 0; i < bushCount; i++) {
                 const angle = (i / bushCount) * Math.PI * 2 + Math.PI / 4;
-                const radius = 4 + currentWealthTier * 0.5;
+                const radius = 4 + Math.floor(unlockedItems.size / 5) * 0.5;
                 const x = Math.cos(angle) * radius;
                 const z = Math.sin(angle) * radius;
                 
                 const bush = createBush();
                 bush.position.set(x, -1, z);
+                bush.name = 'nature';
                 bush.scale.set(0, 0, 0);
                 scene.add(bush);
                 environmentObjects.push(bush);
@@ -1183,20 +1900,15 @@
                 }, i * 150 + 500);
             }
         }
-        
-        function createItem(type) {
-            switch(type) {
-                case 'carpet':
-                    return createCarpet();
-                case 'plant':
-                    return createPottedPlant();
-                case 'lamp':
-                    return createLamp();
-                case 'sofa':
-                    return createSofa();
-                case 'bookshelf':
-                    return createBookshelf();
-                case 'computerDesk':
+        function createCoffeeTable() { return createCoffeeTable(); }
+        function createComputerDesk() { return createComputerDesk(); }
+        function createFountain() { return createFountain(); }
+        function createStatue() { return createStatue(); }
+        function createPool() { return createSmallPool(); }
+        function createLuxuryCar() { return createLuxuryCar(); }
+        function createChandelier() { return createChandelier(); }
+        function createGrandPiano() { return createGrandPiano(); }
+        function createArtwork() { return createPoster(); }
                     return createComputerDesk();
                 case 'tv':
                     return createTV();
@@ -1677,14 +2389,11 @@
         }
         
         function updateEnvironment(wealthScore, healthScore) {
-            // Calculate wealth tier (0-5 based on $0-100K+)
-            const wealthValue = (wealthScore / 100) * 100; // Convert to $0-100K range
-            let newWealthTier = 0;
-            for (let i = 0; i < WEALTH_TIERS.length; i++) {
-                if (wealthValue >= WEALTH_TIERS[i].min) {
-                    newWealthTier = i;
-                }
-            }
+            // Convert score to $K (0-100 scale)
+            const wealthInK = (wealthScore / 100) * 100;
+            
+            // Check and unlock items based on milestones
+            checkAndUnlockItems(wealthInK);
             
             // Calculate health tier (0-2 based on 0-100)
             let newHealthTier = 0;
@@ -1694,35 +2403,59 @@
                 }
             }
             
-            // Update UI
-            document.getElementById('envWealth').textContent = WEALTH_TIERS[newWealthTier].name;
-            document.getElementById('envHealth').textContent = HEALTH_TIERS[newHealthTier].name;
-            
-            // Update items list
-            const itemsContainer = document.getElementById('envItems');
-            const items = WEALTH_TIERS[newWealthTier].items;
-            const itemEmojis = {
-                'basicFloor': '🛏️', 'basicWalls': '🧱',
-                'carpet': '🧶', 'plant': '🪴', 'lamp': '🛋️',
-                'sofa': '🛋️', 'deskLamp': '💡', 'bookshelf': '📚', 'rug': '🧶',
-                'computerDesk': '💻', 'tv': '📺', 'coffeeTable': '☕', 'artwork': '🖼️',
-                'garden': '🌳', 'patio': '🏡', 'fountain': '⛲', 'statue': '🗿',
-                'pool': '🏊', 'luxuryCar': '🚗', 'chandelier': '💎', 'grandPiano': '🎹'
-            };
-            
-            itemsContainer.innerHTML = items.map(item => 
-                `\u003cspan class="env-item"\u003e${itemEmojis[item] || '✨'} ${item.replace(/([A-Z])/g, ' $1').trim()}\u003c/span\u003e`
-            ).join('');
-            
-            // Check if environment needs 3D update
-            if (newWealthTier !== currentWealthTier || newHealthTier !== currentHealthTier) {
-                currentWealthTier = newWealthTier;
+            // Update health-based elements if changed
+            if (newHealthTier !== currentHealthTier) {
                 currentHealthTier = newHealthTier;
+                addHealthItems();
+                updateEnvironmentLighting();
+            }
+            
+            // Update UI
+            updateEnvironmentUI(wealthInK, healthScore);
+        }
+        
+        function updateEnvironmentUI(wealthInK, healthScore) {
+            // Find current tier for display
+            let currentTier = WEALTH_MILESTONES.find(m => wealthInK < m.threshold) || WEALTH_MILESTONES[WEALTH_MILESTONES.length - 1];
+            let tierIndex = WEALTH_MILESTONES.indexOf(currentTier);
+            if (wealthInK >= currentTier.threshold && tierIndex < WEALTH_MILESTONES.length - 1) {
+                currentTier = WEALTH_MILESTONES[tierIndex + 1];
+            }
+            
+            // Calculate health tier
+            let healthTier = HEALTH_TIERS.find(h => healthScore >= h.min && healthScore < h.max) || HEALTH_TIERS[2];
+            
+            // Update UI elements
+            const envWealth = document.getElementById('envWealth');
+            const envHealth = document.getElementById('envHealth');
+            const envItems = document.getElementById('envItems');
+            
+            if (envWealth) {
+                const tierNames = ['Small Room', 'Cozy Room', 'Nice Apartment', 'Modern Home', 'Big House', 'Mansion'];
+                const tierIndex = Math.min(5, Math.floor(wealthInK / 20));
+                envWealth.textContent = tierNames[tierIndex] + ` ($${Math.round(wealthInK)}K)`;
+            }
+            
+            if (envHealth) {
+                envHealth.textContent = healthTier.name;
+            }
+            
+            if (envItems) {
+                const unlockedList = Array.from(unlockedItems).slice(-5); // Show last 5 unlocked
+                const itemEmojis = {
+                    'basicLight': '💡', 'smallPlant': '🌱', 'rug': '🧶', 'poster': '🖼️', 'smallTable': '🛏️',
+                    'betterLamp': '🛋️', 'bookshelf': '📚', 'smallTV': '📺', 'comfyChair': '🪑', 'coffeeTable': '☕',
+                    'computerDesk': '💻', 'gamingChair': '🎮', 'bigTV': '📺', 'soundSystem': '🔊', 'roomExpansion': '🏠',
+                    'gardenStart': '🌳', 'patio': '🏡', 'fountain': '⛲', 'smallPool': '🏊', 'outdoorFurniture': '🪑',
+                    'garage': '🚗', 'homeGym': '💪', 'wineCellar': '🍷', 'theaterRoom': '🎬', 'guestHouse': '🏠',
+                    'tennisCourt': '🎾', 'helipad': '🚁', 'privateDock': '⚓', 'megaMansion': '🏰'
+                };
                 
-                // Rebuild environment with animation
-                initEnvironment();
-                
-                console.log(`Environment updated: ${WEALTH_TIERS[currentWealthTier].name}, ${HEALTH_TIERS[currentHealthTier].name}`);
+                if (unlockedList.length > 0) {
+                    envItems.innerHTML = unlockedList.map(item => 
+                        `\u003cspan class="env-item"\u003e${itemEmojis[item] || '✨'} ${item.replace(/([A-Z])/g, ' $1').trim()}\u003c/span\u003e`
+                    ).join('');
+                }
             }
         }
         
