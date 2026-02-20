@@ -292,6 +292,54 @@
             color: #888;
         }
         
+        /* Environment Panel */
+        .environment-status {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .env-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .env-row:last-of-type {
+            border-bottom: none;
+        }
+        
+        .env-label {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        .env-value {
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .env-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #333;
+        }
+        
+        .env-item {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            border-radius: 12px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            color: #00d4ff;
+        }
+        
         /* Command Center */
         .command-center {
             display: flex;
@@ -600,6 +648,24 @@
                         <div class="stat-icon">💰</div>
                         <div class="stat-value-large" id="wealthValue">0</div>
                         <div class="stat-label-small">Wealth Score</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Environment Status -->
+            <div class="stats-panel">
+                <div class="growth-title">🏠 Environment</div>
+                <div class="environment-status">
+                    <div class="env-row">
+                        <span class="env-label">Wealth Level:</span>
+                        <span class="env-value" id="envWealth">Small Room</span>
+                    </div>
+                    <div class="env-row">
+                        <span class="env-label">Health Level:</span>
+                        <span class="env-value" id="envHealth">Gloomy</span>
+                    </div>
+                    <div class="env-items" id="envItems">
+                        <span class="env-item">🛏️ Basic floor</span>
                     </div>
                 </div>
             </div>
@@ -965,6 +1031,699 @@
                 }
             });
             scene.add(character);
+            
+            // Initialize environment after character is added
+            initEnvironment();
+        }
+        
+        // ============================================
+        // ENVIRONMENT GROWTH SYSTEM
+        // ============================================
+        
+        let environmentObjects = [];
+        let currentWealthTier = 0;
+        let currentHealthTier = 0;
+        
+        // Wealth Tiers ($0-5K, $5K-15K, $15K-30K, $30K-50K, $50K-100K, $100K+)
+        const WEALTH_TIERS = [
+            { min: 0, max: 5, name: 'Small Room', items: ['basicFloor', 'basicWalls'] },
+            { min: 5, max: 15, name: 'Cozy Room', items: ['carpet', 'plant', 'lamp'] },
+            { min: 15, max: 30, name: 'Nice Apartment', items: ['sofa', 'deskLamp', 'bookshelf', 'rug'] },
+            { min: 30, max: 50, name: 'Modern Home', items: ['computerDesk', 'tv', 'coffeeTable', 'artwork'] },
+            { min: 50, max: 100, name: 'Big House', items: ['garden', 'patio', 'fountain', 'statue'] },
+            { min: 100, max: 999, name: 'Mansion', items: ['pool', 'luxuryCar', 'chandelier', 'grandPiano'] }
+        ];
+        
+        // Health Tiers (Low, Medium, High)
+        const HEALTH_TIERS = [
+            { min: 0, max: 33, name: 'Gloomy', lighting: 0.3, fog: 0x1a1a2e, sky: 0x0f0f1a },
+            { min: 33, max: 66, name: 'Bright', lighting: 0.6, fog: 0x2d2d4a, sky: 0x1a1a3e },
+            { min: 66, max: 100, name: 'Sunny', lighting: 1.0, fog: 0x4a4a6a, sky: 0x2d5a7d }
+        ];
+        
+        function initEnvironment() {
+            // Clear existing environment
+            environmentObjects.forEach(obj => scene.remove(obj));
+            environmentObjects = [];
+            
+            // Create base floor based on wealth tier
+            createBaseEnvironment();
+        }
+        
+        function createBaseEnvironment() {
+            // Room floor - expands with wealth
+            const roomSizes = [4, 6, 8, 10, 14, 20]; // Size increases with wealth tier
+            const roomSize = roomSizes[currentWealthTier] || 4;
+            
+            // Main floor
+            const floorGeometry = new THREE.PlaneGeometry(roomSize, roomSize);
+            const floorMaterials = [
+                new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 }), // Concrete
+                new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.8 }), // Wood
+                new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.7 }), // Nice wood
+                new THREE.MeshStandardMaterial({ color: 0xc4a77d, roughness: 0.6 }), // Premium wood
+                new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.5 }), // Gold accent
+                new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.3 }) // Marble
+            ];
+            
+            const floor = new THREE.Mesh(floorGeometry, floorMaterials[currentWealthTier] || floorMaterials[0]);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -1;
+            floor.receiveShadow = true;
+            floor.name = 'floor';
+            scene.add(floor);
+            environmentObjects.push(floor);
+            
+            // Add wealth-based items
+            addWealthItems();
+            
+            // Add health-based nature elements
+            addHealthItems();
+            
+            // Update lighting based on health
+            updateEnvironmentLighting();
+        }
+        
+        function addWealthItems() {
+            const items = WEALTH_TIERS[currentWealthTier]?.items || [];
+            
+            items.forEach((itemType, index) => {
+                setTimeout(() => {
+                    const item = createItem(itemType);
+                    if (item) {
+                        // Animate item appearing
+                        item.scale.set(0, 0, 0);
+                        scene.add(item);
+                        environmentObjects.push(item);
+                        
+                        // Pop-in animation
+                        const targetScale = 1;
+                        const animateIn = () => {
+                            if (item.scale.x < targetScale) {
+                                item.scale.x += 0.05;
+                                item.scale.y += 0.05;
+                                item.scale.z += 0.05;
+                                requestAnimationFrame(animateIn);
+                            }
+                        };
+                        animateIn();
+                    }
+                }, index * 200); // Stagger appearance
+            });
+        }
+        
+        function addHealthItems() {
+            // Nature elements based on health tier
+            const treeCount = currentHealthTier * 2; // 0, 2, 4 trees
+            const bushCount = currentHealthTier * 3; // 0, 3, 6 bushes
+            
+            // Add trees
+            for (let i = 0; i < treeCount; i++) {
+                const angle = (i / treeCount) * Math.PI * 2;
+                const radius = 5 + currentWealthTier;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                
+                const tree = createTree();
+                tree.position.set(x, -1, z);
+                
+                // Animate in
+                tree.scale.set(0, 0, 0);
+                scene.add(tree);
+                environmentObjects.push(tree);
+                
+                setTimeout(() => {
+                    const grow = () => {
+                        if (tree.scale.x < 1) {
+                            tree.scale.x += 0.02;
+                            tree.scale.y += 0.02;
+                            tree.scale.z += 0.02;
+                            requestAnimationFrame(grow);
+                        }
+                    };
+                    grow();
+                }, i * 300);
+            }
+            
+            // Add bushes
+            for (let i = 0; i < bushCount; i++) {
+                const angle = (i / bushCount) * Math.PI * 2 + Math.PI / 4;
+                const radius = 4 + currentWealthTier * 0.5;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                
+                const bush = createBush();
+                bush.position.set(x, -1, z);
+                bush.scale.set(0, 0, 0);
+                scene.add(bush);
+                environmentObjects.push(bush);
+                
+                setTimeout(() => {
+                    bush.scale.set(1, 1, 1);
+                }, i * 150 + 500);
+            }
+        }
+        
+        function createItem(type) {
+            switch(type) {
+                case 'carpet':
+                    return createCarpet();
+                case 'plant':
+                    return createPottedPlant();
+                case 'lamp':
+                    return createLamp();
+                case 'sofa':
+                    return createSofa();
+                case 'bookshelf':
+                    return createBookshelf();
+                case 'computerDesk':
+                    return createComputerDesk();
+                case 'tv':
+                    return createTV();
+                case 'coffeeTable':
+                    return createCoffeeTable();
+                case 'artwork':
+                    return createArtwork();
+                case 'fountain':
+                    return createFountain();
+                case 'statue':
+                    return createStatue();
+                case 'pool':
+                    return createPool();
+                case 'luxuryCar':
+                    return createLuxuryCar();
+                case 'chandelier':
+                    return createChandelier();
+                case 'grandPiano':
+                    return createGrandPiano();
+                default:
+                    return null;
+            }
+        }
+        
+        // Item creation functions
+        function createCarpet() {
+            const geometry = new THREE.PlaneGeometry(2, 3);
+            const material = new THREE.MeshStandardMaterial({ color: 0x8b0000, roughness: 1 });
+            const carpet = new THREE.Mesh(geometry, material);
+            carpet.rotation.x = -Math.PI / 2;
+            carpet.position.set(0, -0.99, 0);
+            carpet.receiveShadow = true;
+            return carpet;
+        }
+        
+        function createPottedPlant() {
+            const group = new THREE.Group();
+            
+            // Pot
+            const potGeometry = new THREE.CylinderGeometry(0.3, 0.2, 0.4, 8);
+            const potMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+            const pot = new THREE.Mesh(potGeometry, potMaterial);
+            pot.position.y = 0.2;
+            pot.castShadow = true;
+            group.add(pot);
+            
+            // Plant
+            const plantGeometry = new THREE.SphereGeometry(0.4, 8, 8);
+            const plantMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+            const plant = new THREE.Mesh(plantGeometry, plantMaterial);
+            plant.position.y = 0.6;
+            plant.castShadow = true;
+            group.add(plant);
+            
+            group.position.set(2, -1, -2);
+            return group;
+        }
+        
+        function createLamp() {
+            const group = new THREE.Group();
+            
+            // Base
+            const baseGeometry = new THREE.CylinderGeometry(0.2, 0.25, 0.1, 8);
+            const baseMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.5 });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.position.y = 0.05;
+            group.add(base);
+            
+            // Pole
+            const poleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1.5, 8);
+            const pole = new THREE.Mesh(poleGeometry, baseMaterial);
+            pole.position.y = 0.8;
+            group.add(pole);
+            
+            // Shade
+            const shadeGeometry = new THREE.ConeGeometry(0.4, 0.5, 8, 1, true);
+            const shadeMaterial = new THREE.MeshStandardMaterial({ color: 0xffdd88, emissive: 0xffaa00, emissiveIntensity: 0.3 });
+            const shade = new THREE.Mesh(shadeGeometry, shadeMaterial);
+            shade.position.y = 1.4;
+            group.add(shade);
+            
+            // Light
+            const light = new THREE.PointLight(0xffdd88, 0.5, 5);
+            light.position.y = 1.3;
+            group.add(light);
+            
+            group.position.set(-2, -1, -2);
+            return group;
+        }
+        
+        function createSofa() {
+            const group = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({ color: 0x4a5568, roughness: 0.8 });
+            
+            // Seat
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(2, 0.4, 0.8), material);
+            seat.position.y = 0.4;
+            seat.castShadow = true;
+            group.add(seat);
+            
+            // Back
+            const back = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 0.2), material);
+            back.position.set(0, 0.8, -0.3);
+            back.castShadow = true;
+            group.add(back);
+            
+            // Arms
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.6, 0.8), material);
+            leftArm.position.set(-0.9, 0.6, 0);
+            leftArm.castShadow = true;
+            group.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.6, 0.8), material);
+            rightArm.position.set(0.9, 0.6, 0);
+            rightArm.castShadow = true;
+            group.add(rightArm);
+            
+            group.position.set(0, -1, 2);
+            return group;
+        }
+        
+        function createBookshelf() {
+            const group = new THREE.Group();
+            const woodMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
+            
+            // Frame
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 0.4), woodMaterial);
+            frame.position.y = 1.25;
+            frame.castShadow = true;
+            group.add(frame);
+            
+            // Shelves
+            for (let i = 0; i < 4; i++) {
+                const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.05, 0.35), woodMaterial);
+                shelf.position.y = 0.3 + i * 0.6;
+                group.add(shelf);
+                
+                // Books
+                for (let j = 0; j < 5; j++) {
+                    const bookColor = new THREE.Color().setHSL(Math.random(), 0.7, 0.5);
+                    const book = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.1, 0.25 + Math.random() * 0.1, 0.25),
+                        new THREE.MeshStandardMaterial({ color: bookColor })
+                    );
+                    book.position.set(-0.5 + j * 0.25, 0.45 + i * 0.6, 0);
+                    group.add(book);
+                }
+            }
+            
+            group.position.set(-3, -1, 0);
+            return group;
+        }
+        
+        function createComputerDesk() {
+            const group = new THREE.Group();
+            const woodMaterial = new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.6 });
+            const metalMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.6 });
+            
+            // Desktop
+            const desktop = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 1), woodMaterial);
+            desktop.position.y = 0.8;
+            desktop.castShadow = true;
+            group.add(desktop);
+            
+            // Legs
+            const legPositions = [[-0.9, -0.4], [0.9, -0.4], [-0.9, 0.4], [0.9, 0.4]];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8), metalMaterial);
+                leg.position.set(pos[0], 0.4, pos[1]);
+                group.add(leg);
+            });
+            
+            // Monitor
+            const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.05), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+            monitor.position.set(0, 1.1, -0.3);
+            group.add(monitor);
+            
+            // Screen glow
+            const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.4), new THREE.MeshBasicMaterial({ color: 0x00d4ff }));
+            screen.position.set(0, 1.1, -0.27);
+            group.add(screen);
+            
+            group.position.set(2.5, -1, -1);
+            return group;
+        }
+        
+        function createTV() {
+            const group = new THREE.Group();
+            
+            // Screen
+            const screen = new THREE.Mesh(
+                new THREE.BoxGeometry(1.5, 0.9, 0.05),
+                new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 })
+            );
+            screen.position.y = 1;
+            group.add(screen);
+            
+            // Display
+            const display = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.4, 0.8),
+                new THREE.MeshBasicMaterial({ color: 0x222244 })
+            );
+            display.position.set(0, 1, 0.03);
+            group.add(display);
+            
+            // Stand
+            const stand = new THREE.Mesh(
+                new THREE.BoxGeometry(0.4, 0.3, 0.3),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            stand.position.y = 0.5;
+            group.add(stand);
+            
+            group.position.set(0, -1, -3);
+            return group;
+        }
+        
+        function createCoffeeTable() {
+            const group = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({ color: 0x4a3c28, roughness: 0.6 });
+            
+            // Top
+            const top = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.05, 16), material);
+            top.position.y = 0.4;
+            top.castShadow = true;
+            group.add(top);
+            
+            // Legs
+            for (let i = 0; i < 3; i++) {
+                const angle = (i / 3) * Math.PI * 2;
+                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.03, 0.4), material);
+                leg.position.set(Math.cos(angle) * 0.5, 0.2, Math.sin(angle) * 0.5);
+                group.add(leg);
+            }
+            
+            group.position.set(1.5, -1, 1.5);
+            return group;
+        }
+        
+        function createArtwork() {
+            const group = new THREE.Group();
+            
+            // Frame
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 1.2, 0.05),
+                new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.3 })
+            );
+            group.add(frame);
+            
+            // Canvas
+            const canvas = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.85, 1.05),
+                new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(Math.random(), 0.5, 0.5) })
+            );
+            canvas.position.z = 0.03;
+            group.add(canvas);
+            
+            group.position.set(-3.5, 0.5, -3);
+            group.rotation.y = Math.PI / 6;
+            return group;
+        }
+        
+        function createFountain() {
+            const group = new THREE.Group();
+            const stoneMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 });
+            const waterMaterial = new THREE.MeshStandardMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.8 });
+            
+            // Base
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.7, 0.3, 16), stoneMaterial);
+            base.position.y = 0.15;
+            base.castShadow = true;
+            group.add(base);
+            
+            // Water
+            const water = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.1, 16), waterMaterial);
+            water.position.y = 0.3;
+            group.add(water);
+            
+            // Center pillar
+            const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 1, 8), stoneMaterial);
+            pillar.position.y = 0.8;
+            pillar.castShadow = true;
+            group.add(pillar);
+            
+            // Top
+            const top = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.2, 0.3, 8), stoneMaterial);
+            top.position.y = 1.3;
+            group.add(top);
+            
+            group.position.set(4, -1, 4);
+            return group;
+        }
+        
+        function createStatue() {
+            const group = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+            
+            // Pedestal
+            const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.8), material);
+            pedestal.position.y = 0.3;
+            pedestal.castShadow = true;
+            group.add(pedestal);
+            
+            // Figure (abstract)
+            const figure = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.2, 8), material);
+            figure.position.y = 1.2;
+            figure.castShadow = true;
+            group.add(figure);
+            
+            group.position.set(-4, -1, 4);
+            return group;
+        }
+        
+        function createPool() {
+            const group = new THREE.Group();
+            
+            // Pool base
+            const poolGeometry = new THREE.BoxGeometry(4, 0.5, 3);
+            const poolMaterial = new THREE.MeshStandardMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.6 });
+            const pool = new THREE.Mesh(poolGeometry, poolMaterial);
+            pool.position.y = -0.5;
+            group.add(pool);
+            
+            // Pool border
+            const borderGeometry = new THREE.BoxGeometry(4.4, 0.6, 3.4);
+            const borderMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const border = new THREE.Mesh(borderGeometry, borderMaterial);
+            border.position.y = -0.55;
+            group.add(border);
+            
+            group.position.set(6, -0.5, -2);
+            return group;
+        }
+        
+        function createLuxuryCar() {
+            const group = new THREE.Group();
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.6, roughness: 0.2 });
+            const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            
+            // Body
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 1), bodyMaterial);
+            body.position.y = 0.5;
+            body.castShadow = true;
+            group.add(body);
+            
+            // Top
+            const top = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.9), bodyMaterial);
+            top.position.y = 0.9;
+            group.add(top);
+            
+            // Wheels
+            const wheelPositions = [[-0.7, 0.25, 0.5], [0.7, 0.25, 0.5], [-0.7, 0.25, -0.5], [0.7, 0.25, -0.5]];
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.1, 16), wheelMaterial);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(...pos);
+                group.add(wheel);
+            });
+            
+            group.position.set(-6, -1, 2);
+            return group;
+        }
+        
+        function createChandelier() {
+            const group = new THREE.Group();
+            const goldMaterial = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 });
+            
+            // Chain
+            const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1), goldMaterial);
+            chain.position.y = 2.5;
+            group.add(chain);
+            
+            // Main body
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.3, 0.8, 8), goldMaterial);
+            body.position.y = 2;
+            group.add(body);
+            
+            // Arms
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8), goldMaterial);
+                arm.rotation.z = Math.PI / 2;
+                arm.rotation.y = angle;
+                arm.position.set(Math.cos(angle) * 0.4, 1.8, Math.sin(angle) * 0.4);
+                group.add(arm);
+                
+                // Light
+                const light = new THREE.PointLight(0xffdd88, 0.3, 3);
+                light.position.set(Math.cos(angle) * 0.7, 1.6, Math.sin(angle) * 0.7);
+                group.add(light);
+            }
+            
+            group.position.set(0, 2, 0);
+            return group;
+        }
+        
+        function createGrandPiano() {
+            const group = new THREE.Group();
+            const blackMaterial = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1 });
+            const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            
+            // Body
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 2), blackMaterial);
+            body.position.y = 0.6;
+            body.castShadow = true;
+            group.add(body);
+            
+            // Lid
+            const lid = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.05, 1.8), blackMaterial);
+            lid.position.set(0, 1.2, -0.3);
+            lid.rotation.x = -0.3;
+            group.add(lid);
+            
+            // Keys
+            const keys = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.3), whiteMaterial);
+            keys.position.set(0, 0.82, 0.9);
+            group.add(keys);
+            
+            // Legs
+            const legPositions = [[-0.6, 0.3, 0.8], [0.6, 0.3, 0.8], [-0.6, 0.3, -0.8], [0.6, 0.3, -0.8]];
+            legPositions.forEach(pos => {
+                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6), blackMaterial);
+                leg.position.set(...pos);
+                group.add(leg);
+            });
+            
+            group.position.set(3, -1, 3);
+            return group;
+        }
+        
+        // Nature items
+        function createTree() {
+            const group = new THREE.Group();
+            
+            // Trunk
+            const trunkGeometry = new THREE.CylinderGeometry(0.15, 0.2, 1.5, 8);
+            const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = 0.75;
+            trunk.castShadow = true;
+            group.add(trunk);
+            
+            // Leaves
+            const leavesGeometry = new THREE.ConeGeometry(0.8, 2, 8);
+            const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+            const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+            leaves.position.y = 2;
+            leaves.castShadow = true;
+            group.add(leaves);
+            
+            return group;
+        }
+        
+        function createBush() {
+            const geometry = new THREE.SphereGeometry(0.4, 8, 8);
+            const material = new THREE.MeshStandardMaterial({ color: 0x32cd32 });
+            const bush = new THREE.Mesh(geometry, material);
+            bush.position.y = 0.2;
+            bush.castShadow = true;
+            return bush;
+        }
+        
+        function updateEnvironmentLighting() {
+            const healthTier = HEALTH_TIERS[currentHealthTier];
+            if (!healthTier) return;
+            
+            // Update ambient light
+            const ambientLight = scene.children.find(child => child.isAmbientLight);
+            if (ambientLight) {
+                ambientLight.intensity = healthTier.lighting;
+            }
+            
+            // Update background color
+            scene.background = new THREE.Color(healthTier.sky);
+            
+            // Update fog
+            scene.fog = new THREE.Fog(healthTier.fog, 10, 50);
+        }
+        
+        function updateEnvironment(wealthScore, healthScore) {
+            // Calculate wealth tier (0-5 based on $0-100K+)
+            const wealthValue = (wealthScore / 100) * 100; // Convert to $0-100K range
+            let newWealthTier = 0;
+            for (let i = 0; i < WEALTH_TIERS.length; i++) {
+                if (wealthValue >= WEALTH_TIERS[i].min) {
+                    newWealthTier = i;
+                }
+            }
+            
+            // Calculate health tier (0-2 based on 0-100)
+            let newHealthTier = 0;
+            for (let i = 0; i < HEALTH_TIERS.length; i++) {
+                if (healthScore >= HEALTH_TIERS[i].min) {
+                    newHealthTier = i;
+                }
+            }
+            
+            // Update UI
+            document.getElementById('envWealth').textContent = WEALTH_TIERS[newWealthTier].name;
+            document.getElementById('envHealth').textContent = HEALTH_TIERS[newHealthTier].name;
+            
+            // Update items list
+            const itemsContainer = document.getElementById('envItems');
+            const items = WEALTH_TIERS[newWealthTier].items;
+            const itemEmojis = {
+                'basicFloor': '🛏️', 'basicWalls': '🧱',
+                'carpet': '🧶', 'plant': '🪴', 'lamp': '🛋️',
+                'sofa': '🛋️', 'deskLamp': '💡', 'bookshelf': '📚', 'rug': '🧶',
+                'computerDesk': '💻', 'tv': '📺', 'coffeeTable': '☕', 'artwork': '🖼️',
+                'garden': '🌳', 'patio': '🏡', 'fountain': '⛲', 'statue': '🗿',
+                'pool': '🏊', 'luxuryCar': '🚗', 'chandelier': '💎', 'grandPiano': '🎹'
+            };
+            
+            itemsContainer.innerHTML = items.map(item => 
+                `\u003cspan class="env-item"\u003e${itemEmojis[item] || '✨'} ${item.replace(/([A-Z])/g, ' $1').trim()}\u003c/span\u003e`
+            ).join('');
+            
+            // Check if environment needs 3D update
+            if (newWealthTier !== currentWealthTier || newHealthTier !== currentHealthTier) {
+                currentWealthTier = newWealthTier;
+                currentHealthTier = newHealthTier;
+                
+                // Rebuild environment with animation
+                initEnvironment();
+                
+                console.log(`Environment updated: ${WEALTH_TIERS[currentWealthTier].name}, ${HEALTH_TIERS[currentHealthTier].name}`);
+            }
         }
         
         // Animation Loop
@@ -1103,6 +1862,9 @@
             
             // Update target scale
             targetScale = LEVELS[newLevel].scale;
+            
+            // Update environment based on wealth and health
+            updateEnvironment(growthState.wealthScore, growthState.healthScore);
             
             updateUI();
         }
@@ -1245,6 +2007,10 @@
                 
                 // Update growth
                 calculateGrowth(Math.round(healthScore), Math.round(wealthScore));
+                
+                // Update environment with actual wealth value (in $K)
+                const wealthInK = (wealthScore / 100) * 100; // Scale to $0-100K
+                updateEnvironment(wealthInK, healthScore);
                 
                 document.getElementById('errorMessage').classList.remove('active');
                 
