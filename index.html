@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="stylesheet" href="pixel-theme.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -627,6 +628,7 @@
             <a href="/task-board">Tasks</a>
             <a href="/logs">Logs</a>
             <a href="/data">Data</a>
+            <a href="#confession-section" style="background: linear-gradient(135deg, #ff6b6b, #ff8e8e); color: white; border-radius: 6px; font-weight: 600;">📢 Confessions</a>
             <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
                 <span class="refresh-icon">🔄</span> Refresh
             </button>
@@ -3107,5 +3109,7 @@
             }
         });
     </script>
+    <script src="holiday-system.js"></script>
+    <script src="confession-system.js"></script>
 </body>
 </html>
