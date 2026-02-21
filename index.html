@@ -1433,60 +1433,79 @@
         function loadVRM() {
             const loader = new THREE.GLTFLoader();
             
-            // VRM URL - Meebit #11318 with CORS proxy
-            const vrmUrl = 'https://files.meebits.app/vrm/11318.vrm';
+            // VRM URL - Meebit #11318 with CORS proxy fallback
+            const vrmUrls = [
+                'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm'),
+                'https://corsproxy.io/?' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm'),
+                'https://files.meebits.app/vrm/11318.vrm' // Direct as last resort
+            ];
             
-            // Set a timeout to ensure we show something even if loading hangs
-            const loadTimeout = setTimeout(() => {
-                console.warn('⏱️ VRM loading timeout, creating fallback...');
-                if (!character) {
+            let currentUrlIndex = 0;
+            
+            function tryLoadVRM() {
+                if (currentUrlIndex >= vrmUrls.length) {
+                    console.warn('⚠️ All VRM URLs failed, using fallback');
                     createFallbackCharacter();
+                    return;
                 }
-            }, 15000); // 15 second timeout
-            
-            loader.load(
-                vrmUrl,
-                function(gltf) {
-                    clearTimeout(loadTimeout);
-                    console.log('✅ VRM #11318 loaded successfully');
-                    
-                    if (character) scene.remove(character);
-                    
-                    character = gltf.scene;
-                    
-                    // FIXED SCALE: VRM always loads at full scale (1.0) - growth feature removed
-                    character.scale.set(0.4, 0.4, 0.4);
-                    character.position.set(0, -0.5, 0);
-                    
-                    // Enable shadows
-                    character.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
+                
+                const vrmUrl = vrmUrls[currentUrlIndex];
+                console.log('🔄 Trying VRM URL #' + (currentUrlIndex + 1) + ':', vrmUrl.substring(0, 50) + '...');
+                
+                // Set a timeout to ensure we show something even if loading hangs
+                const loadTimeout = setTimeout(() => {
+                    console.warn('⏱️ VRM loading timeout for URL #' + (currentUrlIndex + 1));
+                    currentUrlIndex++;
+                    tryLoadVRM();
+                }, 10000); // 10 second timeout per URL
+                
+                loader.load(
+                    vrmUrl,
+                    function(gltf) {
+                        clearTimeout(loadTimeout);
+                        console.log('✅ VRM #11318 loaded successfully from URL #' + (currentUrlIndex + 1));
+                        
+                        if (character) scene.remove(character);
+                        
+                        character = gltf.scene;
+                        
+                        // FIXED SCALE: VRM always loads at full scale - growth feature removed
+                        character.scale.set(0.4, 0.4, 0.4);
+                        character.position.set(0, -0.5, 0);
+                        
+                        // Enable shadows
+                        character.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+                        
+                        scene.add(character);
+                        applyPose(0);
+                        
+                        // Hide loading overlay
+                        document.getElementById('loadingOverlay').classList.add('hidden');
+                        
+                        showNotification('✅ VRM #11318 LOADED!');
+                    },
+                    function(xhr) {
+                        if (xhr.total > 0) {
+                            const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                            console.log('VRM loading: ' + percent + '%');
+                            document.querySelector('.loading-text').textContent = `LOADING VRM #11318... ${percent}%`;
                         }
-                    });
-                    
-                    scene.add(character);
-                    applyPose(0);
-                    
-                    // Hide loading overlay
-                    document.getElementById('loadingOverlay').classList.add('hidden');
-                    
-                    showNotification('✅ VRM #11318 LOADED!');
-                },
-                function(xhr) {
-                    if (xhr.total > 0) {
-                        const percent = Math.round((xhr.loaded / xhr.total) * 100);
-                        console.log('VRM loading: ' + percent + '%');
-                        document.querySelector('.loading-text').textContent = `LOADING VRM #11318... ${percent}%`;
+                    },
+                    function(error) {
+                        clearTimeout(loadTimeout);
+                        console.warn('⚠️ VRM URL #' + (currentUrlIndex + 1) + ' failed:', error.message);
+                        currentUrlIndex++;
+                        tryLoadVRM();
                     }
-                },
-                function(error) {
-                    clearTimeout(loadTimeout);
-                    console.warn('⚠️ VRM load failed, using fallback:', error);
-                    createFallbackCharacter();
-                }
-            );
+                );
+            }
+            
+            tryLoadVRM();
         }
         
         function createFallbackCharacter() {
