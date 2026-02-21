@@ -28,6 +28,29 @@
             --font-terminal: 'VT323', monospace;
         }
 
+        /* P1-030: Light Mode Theme */
+        [data-theme="light"] {
+            --pixel-bg: #f0f0f5;
+            --pixel-dark: #e0e0e8;
+            --pixel-cyan: #0088aa;
+            --pixel-purple: #7b2cbf;
+        }
+
+        [data-theme="light"] body {
+            color: #1a1a2e;
+        }
+
+        [data-theme="light"] .pixel-header {
+            background: linear-gradient(180deg, #e0e0f0 0%, #d0d0e0 100%);
+            border-bottom-color: var(--pixel-cyan);
+        }
+
+        [data-theme="light"] .pixel-card {
+            background: linear-gradient(135deg, #ffffff, #f0f0f5);
+            border-color: #ccc;
+            box-shadow: 8px 8px 0 #bbb;
+        }
+
         body {
             font-family: var(--font-terminal);
             background: var(--pixel-bg);
@@ -1025,6 +1048,7 @@
             <a href="#wealth">WEALTH</a>
             <a href="#confessions">CONFESSIONS</a>
             <a href="#challenges">CHALLENGES</a>
+            <button class="pixel-btn" onclick="toggleTheme()" style="font-size: 8px; padding: 0.5rem;">🌓 THEME</button>
         </nav>
     </header>
 
@@ -3324,6 +3348,17 @@
                 notification.style.animation = 'slide-out 0.3s ease';
                 setTimeout(() => notification.remove(), 300);
             }, 3000);
+        }
+
+        // P1-030: Light/Dark Mode Toggle
+        let currentTheme = localStorage.getItem('mc_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('mc_theme', currentTheme);
+            showNotification(currentTheme === 'light' ? '☀️ LIGHT MODE' : '🌙 DARK MODE');
         }
 
         // Character counter
