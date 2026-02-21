@@ -61,8 +61,12 @@
 | **P1-024** | **Character Customization** | Change colors, add accessories, save presets | 🔴 NEW | Pixel-MC | 4h |
 | **P1-025** | **Social Sharing (Screenshots)** | One-click share to Twitter/X with generated image cards | 🔴 NEW | Forge-MC | 2h |
 | **P1-026** | **Daily Streak Notifications** | Browser push notifications for streak reminders | 🔴 NEW | Code-MC | 2h |
+| **P1-027** | **Environment Level-Up System** | Room upgrades as health/wealth scores increase (new furniture, lighting, backgrounds) | 🔴 NEW | Pixel-MC | 5h |
+| **P1-028** | **Streak Bonus Prizes** | Extra rewards for 7-day, 30-day, 100-day streaks (special costumes, badges, coins) | 🔴 NEW | Code-MC | 3h |
+| **P1-029** | **Pixel UI Polish** | Refined pixel art UI, smoother animations, micro-interactions | 🔴 NEW | Pixel-MC | 4h |
+| **P1-030** | **Light/Dark Mode Toggle** | Theme switcher with persistent preference | 🔴 NEW | Forge-MC | 2h |
 
-**P1 Status: 7/26 COMPLETE (27%)** | **Pending: 19 tasks**
+**P1 Status: 7/30 COMPLETE (23%)** | **Pending: 23 tasks**
 
 ---
 
@@ -102,7 +106,7 @@
 | **P1** | 26 | 7 | 19 | 27% 🟡 |
 | **P2** | 5 | 0 | 5 | 0% ⏳ |
 | **P3** | 5 | 0 | 5 | 0% ⏳ |
-| **TOTAL** | **48** | **19** | **29** | **40%** |
+| **TOTAL** | **52** | **19** | **33** | **37%** |
 
 ---
 
