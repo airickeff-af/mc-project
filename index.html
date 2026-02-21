@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MC Project - Your Personal Health & Wealth Companion">
-    <title>MC Project | Health & Wealth Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="MC Project - Kairosoft Style Health & Wealth Tracker with VRM Character">
+    <meta name="theme-color" content="#2d1b4e">
+    <title>🎮 MC Project | Kairosoft Life Sim</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -20,17 +21,22 @@
             --pixel-yellow: #ffe66d;
             --pixel-pink: #ff6b9d;
             --pixel-green: #4ecdc4;
+            --pixel-gold: #ffd700;
+            --pixel-orange: #ff8c42;
+            --font-pixel: 'Press Start 2P', cursive;
+            --font-terminal: 'VT323', monospace;
         }
         
         body {
-            font-family: 'VT323', monospace;
+            font-family: var(--font-terminal);
             background: var(--pixel-bg);
             color: #e0e0e0;
             min-height: 100vh;
             overflow-x: hidden;
+            image-rendering: pixelated;
         }
         
-        /* Pixel Header */
+        /* Kairosoft Pixel Header */
         .pixel-header {
             background: linear-gradient(180deg, #2d1b4e 0%, #1a1a2e 100%);
             border-bottom: 4px solid var(--pixel-cyan);
@@ -39,22 +45,42 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 0 #000;
+            position: relative;
+        }
+        
+        .pixel-header::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, var(--pixel-cyan) 0px, var(--pixel-cyan) 4px, transparent 4px, transparent 8px);
         }
         
         .pixel-logo {
-            font-family: 'Press Start 2P', cursive;
+            font-family: var(--font-pixel);
             font-size: 14px;
             color: var(--pixel-cyan);
-            text-shadow: 2px 2px 0 #000;
+            text-shadow: 2px 2px 0 #000, 0 0 10px var(--pixel-cyan);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .pixel-logo::before {
+            content: '🎮';
+            font-size: 20px;
         }
         
         .pixel-nav {
             display: flex;
-            gap: 1rem;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
         
         .pixel-nav a {
-            font-family: 'Press Start 2P', cursive;
+            font-family: var(--font-pixel);
             font-size: 8px;
             color: #888;
             text-decoration: none;
@@ -62,15 +88,18 @@
             border: 2px solid #333;
             background: var(--pixel-dark);
             transition: all 0.2s;
+            box-shadow: 2px 2px 0 #000;
         }
         
-        .pixel-nav a:hover {
+        .pixel-nav a:hover, .pixel-nav a.active {
             color: var(--pixel-cyan);
             border-color: var(--pixel-cyan);
             background: rgba(0,212,255,0.1);
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0 #000;
         }
         
-        /* Main Layout */
+        /* Main Layout - Kairosoft Style */
         .main-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -86,21 +115,23 @@
             }
         }
         
-        /* 3D Viewer Section */
+        /* Character Viewer Section */
         .viewer-section {
             background: linear-gradient(135deg, #2d1b4e, #1a1a2e);
             border: 4px solid #333;
             border-radius: 8px;
             padding: 1rem;
             box-shadow: 8px 8px 0 #000;
+            position: relative;
         }
         
         .viewer-title {
-            font-family: 'Press Start 2P', cursive;
+            font-family: var(--font-pixel);
             font-size: 10px;
             color: var(--pixel-yellow);
             margin-bottom: 1rem;
             text-align: center;
+            text-shadow: 2px 2px 0 #000;
         }
         
         #character-canvas {
@@ -109,6 +140,64 @@
             background: linear-gradient(180deg, #1a1a2e, #0f0f1a);
             border: 2px solid #333;
             border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .character-overlay {
+            position: absolute;
+            top: 3rem;
+            left: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+        }
+        
+        .level-badge {
+            background: linear-gradient(135deg, var(--pixel-cyan), #0099cc);
+            color: #000;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            animation: pulse 2s infinite;
+            border: 2px solid #000;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .stage-label {
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--pixel-cyan);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            border: 2px solid var(--pixel-cyan);
+        }
+        
+        .movement-indicator {
+            position: absolute;
+            bottom: 5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--pixel-cyan);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 14px;
+            color: var(--pixel-cyan);
+            pointer-events: none;
+            font-family: var(--font-pixel);
+            font-size: 8px;
         }
         
         .viewer-controls {
@@ -120,7 +209,7 @@
         }
         
         .pixel-btn {
-            font-family: 'Press Start 2P', cursive;
+            font-family: var(--font-pixel);
             font-size: 8px;
             padding: 0.75rem 1rem;
             border: 2px solid var(--pixel-cyan);
@@ -128,11 +217,19 @@
             color: var(--pixel-cyan);
             cursor: pointer;
             transition: all 0.2s;
+            box-shadow: 2px 2px 0 #000;
         }
         
         .pixel-btn:hover {
             background: var(--pixel-cyan);
             color: #000;
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0 #000;
+        }
+        
+        .pixel-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0 #000;
         }
         
         /* Stats Section */
@@ -148,15 +245,26 @@
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 8px 8px 0 #000;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .pixel-card:hover {
+            border-color: var(--pixel-cyan);
+            transform: translate(-2px, -2px);
+            box-shadow: 10px 10px 0 #000;
         }
         
         .pixel-card-title {
-            font-family: 'Press Start 2P', cursive;
+            font-family: var(--font-pixel);
             font-size: 10px;
             color: var(--pixel-cyan);
             margin-bottom: 1rem;
             border-bottom: 2px solid #333;
             padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
         .stat-row {
@@ -177,8 +285,8 @@
         }
         
         .stat-value {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
+            font-family: var(--font-pixel);
+            font-size: 10px;
             color: var(--pixel-yellow);
         }
         
@@ -193,12 +301,522 @@
             border: 2px solid #333;
             border-radius: 4px;
             overflow: hidden;
+            position: relative;
         }
         
         .pixel-progress-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--pixel-cyan), var(--pixel-green));
             transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .pixel-progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(0,0,0,0.2) 4px, rgba(0,0,0,0.2) 8px);
+        }
+        
+        /* Growth Panel */
+        .growth-panel {
+            background: linear-gradient(135deg, #2d1b4e, #1a1a2e);
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 8px 8px 0 #000;
+            margin-top: 1rem;
+        }
+        
+        .growth-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .growth-title {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--pixel-cyan);
+        }
+        
+        .growth-score {
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: var(--pixel-yellow);
+        }
+        
+        .level-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            padding: 0 0.5rem;
+        }
+        
+        .level-marker {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            transition: all 0.3s;
+            font-family: var(--font-pixel);
+            font-size: 6px;
+        }
+        
+        .level-marker.active {
+            color: var(--pixel-cyan);
+            transform: scale(1.2);
+        }
+        
+        .level-marker.completed {
+            color: var(--pixel-green);
+        }
+        
+        .level-marker .marker-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+            margin: 0 auto 0.25rem;
+            border: 2px solid #555;
+            transition: all 0.3s;
+        }
+        
+        .level-marker.active .marker-dot {
+            background: var(--pixel-cyan);
+            border-color: var(--pixel-cyan);
+            box-shadow: 0 0 10px var(--pixel-cyan);
+        }
+        
+        .level-marker.completed .marker-dot {
+            background: var(--pixel-green);
+            border-color: var(--pixel-green);
+        }
+        
+        /* Environment Panel */
+        .environment-panel {
+            background: linear-gradient(135deg, #2d1b4e, #1a1a2e);
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 8px 8px 0 #000;
+            margin-top: 1rem;
+        }
+        
+        .env-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .env-row:last-of-type {
+            border-bottom: none;
+        }
+        
+        .env-label {
+            color: #888;
+            font-size: 16px;
+        }
+        
+        .env-value {
+            color: var(--pixel-cyan);
+            font-weight: 600;
+            font-size: 14px;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+        }
+        
+        .env-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #333;
+        }
+        
+        .env-item {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--pixel-cyan);
+            border-radius: 12px;
+            padding: 0.25rem 0.75rem;
+            font-size: 12px;
+            color: var(--pixel-cyan);
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            padding: 20px;
+        }
+        
+        .modal-overlay.active { display: flex; }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #2d1b4e, #1a1a2e);
+            border: 4px solid var(--pixel-cyan);
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 8px 8px 0 #000;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: 2px solid #333;
+            color: #888;
+            font-size: 18px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-pixel);
+        }
+        
+        .modal-close:hover {
+            color: var(--pixel-pink);
+            border-color: var(--pixel-pink);
+        }
+        
+        .modal-title {
+            font-family: var(--font-pixel);
+            font-size: 12px;
+            color: var(--pixel-cyan);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .detail-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+        
+        .detail-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #333;
+        }
+        
+        .detail-label { color: #888; font-size: 16px; }
+        .detail-value { 
+            font-family: var(--font-pixel); 
+            font-size: 10px; 
+            color: var(--pixel-yellow);
+        }
+        
+        .input-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid #333;
+        }
+        
+        .input-section h3 { 
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--pixel-cyan);
+            margin-bottom: 1rem;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .pixel-input, .pixel-select {
+            flex: 1;
+            padding: 0.75rem;
+            background: #0f0f1a;
+            border: 2px solid #333;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-family: var(--font-terminal);
+            font-size: 16px;
+            min-width: 100px;
+        }
+        
+        .pixel-input:focus, .pixel-select:focus {
+            outline: none;
+            border-color: var(--pixel-cyan);
+        }
+        
+        /* Confession Section */
+        .confession-section {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #2d1b4e 0%, #1a1a2e 100%);
+            border: 4px solid #333;
+            border-radius: 8px;
+            box-shadow: 8px 8px 0 #000;
+        }
+        
+        .confession-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #333;
+        }
+        
+        .confession-form {
+            margin-bottom: 1.5rem;
+        }
+        
+        .pixel-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            background: #0f0f1a;
+            border: 2px solid #333;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-family: var(--font-terminal);
+            font-size: 16px;
+            resize: vertical;
+        }
+        
+        .pixel-textarea:focus {
+            outline: none;
+            border-color: var(--pixel-cyan);
+        }
+        
+        .confession-meta {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .confession-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .confession-card {
+            background: #0f0f1a;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .confession-card:hover {
+            border-color: var(--pixel-cyan);
+            transform: translateX(4px);
+        }
+        
+        .confession-category-tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 0.5rem;
+            font-family: var(--font-pixel);
+            font-size: 6px;
+        }
+        
+        .confession-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #e0e0e0;
+            margin-bottom: 1rem;
+        }
+        
+        .confession-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .confession-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .action-btn {
+            background: transparent;
+            border: 2px solid #333;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            color: #888;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            border-color: var(--pixel-cyan);
+            color: var(--pixel-cyan);
+        }
+        
+        .action-btn.liked {
+            border-color: var(--pixel-pink);
+            color: var(--pixel-pink);
+            background: rgba(255, 107, 157, 0.1);
+        }
+        
+        .winner-banner {
+            background: linear-gradient(135deg, var(--pixel-gold) 0%, #ffed4e 100%);
+            border: 3px solid var(--pixel-gold);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            animation: winner-pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes winner-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+        }
+        
+        .winner-banner.hidden { display: none; }
+        
+        .winner-crown {
+            font-size: 2rem;
+            animation: crown-bounce 1s ease-in-out infinite;
+        }
+        
+        @keyframes crown-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .winner-text {
+            display: flex;
+            flex-direction: column;
+            color: #1a1a2e;
+        }
+        
+        .winner-text strong {
+            font-family: var(--font-pixel);
+            font-size: 8px;
+        }
+        
+        /* Challenge Section */
+        .challenge-section {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #2d1b4e 0%, #1a1a2e 100%);
+            border: 4px solid #333;
+            border-radius: 8px;
+            box-shadow: 8px 8px 0 #000;
+        }
+        
+        .challenge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #333;
+        }
+        
+        .challenge-card {
+            background: #0f0f1a;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .challenge-card:hover {
+            border-color: var(--pixel-cyan);
+        }
+        
+        .challenge-card.winner {
+            border-color: var(--pixel-gold);
+            background: linear-gradient(135deg, #1a1a2e 0%, #2a2510 100%);
+        }
+        
+        .challenge-title {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--pixel-cyan);
+            margin-bottom: 0.5rem;
+        }
+        
+        .challenge-progress-bar {
+            height: 16px;
+            background: #0a0a0f;
+            border: 2px solid #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .challenge-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--pixel-cyan), var(--pixel-green));
+            transition: width 0.3s ease;
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--pixel-cyan);
+            color: #0a0a0f;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            z-index: 10000;
+            box-shadow: 4px 4px 0 #000;
+            animation: slide-in 0.3s ease;
+            border: 2px solid #000;
+        }
+        
+        @keyframes slide-in {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
         }
         
         /* Footer */
@@ -210,16 +828,57 @@
             font-size: 14px;
             color: #666;
         }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .loading-overlay.hidden { display: none; }
+        
+        .pixel-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #333;
+            border-top-color: var(--pixel-cyan);
+            animation: spin 1s steps(8) infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--pixel-cyan);
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="pixel-spinner"></div>
+        <div class="loading-text">LOADING VRM #11318...</div>
+    </div>
+
     <!-- Pixel Header -->
     <header class="pixel-header">
-        <div class="pixel-logo">🎮 MC PROJECT</div>
+        <div class="pixel-logo">MC PROJECT</div>
         <nav class="pixel-nav">
-            <a href="#character">CHARACTER</a>
+            <a href="#character" class="active">CHARACTER</a>
             <a href="#health">HEALTH</a>
             <a href="#wealth">WEALTH</a>
+            <a href="#confessions">CONFESSIONS</a>
+            <a href="#challenges">CHALLENGES</a>
         </nav>
     </header>
 
@@ -228,26 +887,90 @@
         <!-- 3D Character Viewer -->
         <section class="viewer-section" id="character">
             <h2 class="viewer-title">👤 YOUR CHARACTER</h2>
-            <div id="character-canvas"></div>
+            <div style="position: relative;">
+                <div id="character-canvas"></div>
+                <div class="character-overlay">
+                    <div class="level-badge">LVL <span id="currentLevel">1</span></div>
+                    <div class="stage-label" id="stageLabel">👶 BABY</div>
+                </div>
+                <div class="movement-indicator" id="movementIndicator">
+                    <span>🎭</span>
+                    <span>IDLE</span>
+                </div>
+            </div>
             <div class="viewer-controls">
                 <button class="pixel-btn" onclick="rotateCharacter()">🔄 ROTATE</button>
                 <button class="pixel-btn" onclick="toggleWireframe()">🔲 WIREFRAME</button>
                 <button class="pixel-btn" onclick="resetView()">🏠 RESET</button>
+                <button class="pixel-btn" onclick="randomPose()">🎲 POSE</button>
+            </div>
+            
+            <!-- Growth Panel -->
+            <div class="growth-panel">
+                <div class="growth-header">
+                    <div class="growth-title">📈 GROWTH</div>
+                    <div class="growth-score">SCORE: <span id="growthScore">0</span>/100</div>
+                </div>
+                <div class="pixel-progress">
+                    <div class="pixel-progress-fill" id="growthProgress" style="width: 0%"></div>
+                </div>
+                <div class="level-markers">
+                    <div class="level-marker active" data-level="1">
+                        <div class="marker-dot"></div>
+                        <div>👶</div>
+                        <div>BABY</div>
+                    </div>
+                    <div class="level-marker" data-level="2">
+                        <div class="marker-dot"></div>
+                        <div>🧒</div>
+                        <div>CHILD</div>
+                    </div>
+                    <div class="level-marker" data-level="3">
+                        <div class="marker-dot"></div>
+                        <div>🧑</div>
+                        <div>TEEN</div>
+                    </div>
+                    <div class="level-marker" data-level="4">
+                        <div class="marker-dot"></div>
+                        <div>🎓</div>
+                        <div>ADULT</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Environment Panel -->
+            <div class="environment-panel">
+                <h3 class="pixel-card-title">🏠 ENVIRONMENT</h3>
+                <div class="env-row">
+                    <span class="env-label">Wealth Level:</span>
+                    <span class="env-value" id="envWealth">SMALL ROOM</span>
+                </div>
+                <div class="env-row">
+                    <span class="env-label">Health Level:</span>
+                    <span class="env-value" id="envHealth">GLOOMY</span>
+                </div>
+                <div class="env-items" id="envItems">
+                    <span class="env-item">🛏️ BASIC FLOOR</span>
+                </div>
             </div>
         </section>
 
         <!-- Stats Section -->
         <div class="stats-section">
             <!-- Health Card -->
-            <div class="pixel-card" id="health">
+            <div class="pixel-card" id="health" onclick="openModal('health')">
                 <h3 class="pixel-card-title">❤️ HEALTH</h3>
                 <div class="stat-row">
+                    <span class="stat-label">Health Score</span>
+                    <span class="stat-value" id="healthScoreValue">78</span>
+                </div>
+                <div class="stat-row">
                     <span class="stat-label">Exercise Today</span>
-                    <span class="stat-value">45 min</span>
+                    <span class="stat-value">45 MIN</span>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">Sleep Last Night</span>
-                    <span class="stat-value">7.5 hrs</span>
+                    <span class="stat-value">7.5 HRS</span>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">Calories</span>
@@ -255,14 +978,18 @@
                 </div>
                 <div class="progress-container">
                     <div class="pixel-progress">
-                        <div class="pixel-progress-fill" style="width: 78%"></div>
+                        <div class="pixel-progress-fill" id="healthBar" style="width: 78%"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Wealth Card -->
-            <div class="pixel-card" id="wealth">
+            <div class="pixel-card" id="wealth" onclick="openModal('wealth')">
                 <h3 class="pixel-card-title">💰 WEALTH</h3>
+                <div class="stat-row">
+                    <span class="stat-label">Wealth Score</span>
+                    <span class="stat-value" id="wealthScoreValue">65</span>
+                </div>
                 <div class="stat-row">
                     <span class="stat-label">Total Savings</span>
                     <span class="stat-value">$12,450</span>
@@ -277,7 +1004,7 @@
                 </div>
                 <div class="progress-container">
                     <div class="pixel-progress">
-                        <div class="pixel-progress-fill" style="width: 65%"></div>
+                        <div class="pixel-progress-fill" id="wealthBar" style="width: 65%"></div>
                     </div>
                 </div>
             </div>
@@ -293,61 +1020,283 @@
                     <span class="stat-label">Best Streak</span>
                     <span class="stat-value">28 DAYS</span>
                 </div>
+                <div class="stat-row">
+                    <span class="stat-label">Next Reward</span>
+                    <span class="stat-value">3 DAYS</span>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Confession Section -->
+    <section class="confession-section" id="confessions">
+        <div class="confession-header">
+            <h2 class="pixel-card-title">📢 DAILY CONFESSIONS</h2>
+            <span style="font-family: var(--font-pixel); font-size: 8px; color: #888;">
+                <span id="confessionCount">0</span> CONFESSIONS
+            </span>
+        </div>
+        
+        <!-- Submission Form -->
+        <div class="confession-form">
+            <textarea 
+                id="confessionInput" 
+                class="pixel-textarea"
+                placeholder="Share your anonymous confession... What's on your mind?"
+                maxlength="280"
+            ></textarea>
+            <div class="confession-meta">
+                <select id="confessionCategory" class="pixel-select">
+                    <option value="health">💪 HEALTH</option>
+                    <option value="wealth">💰 WEALTH</option>
+                    <option value="mindset">🧠 MINDSET</option>
+                    <option value="relationship">❤️ RELATIONSHIPS</option>
+                    <option value="work">💼 WORK</option>
+                </select>
+                <button onclick="submitConfession()" class="pixel-btn primary">🚀 POST</button>
+            </div>
+            <div class="char-count"><span id="charCount">0</span>/280</div>
+        </div>
+
+        <!-- Winner Banner -->
+        <div id="winnerBanner" class="winner-banner hidden">
+            <div class="winner-crown">👑</div>
+            <div class="winner-text">
+                <strong>YESTERDAY'S WINNER!</strong>
+                <span id="winnerConfession"></span>
+            </div>
+        </div>
+
+        <!-- Confession Feed -->
+        <div id="confessionFeed" class="confession-feed">
+            <div style="text-align: center; padding: 2rem; color: #666; font-family: var(--font-pixel); font-size: 8px;">
+                📝 NO CONFESSIONS YET. BE THE FIRST!
+            </div>
+        </div>
+    </section>
+
+    <!-- Challenge Section -->
+    <section class="challenge-section" id="challenges">
+        <div class="challenge-header">
+            <h2 class="pixel-card-title">🏆 FRIEND CHALLENGES</h2>
+            <button onclick="showChallengeModal()" class="pixel-btn primary">➕ NEW</button>
+        </div>
+        
+        <div id="challengeList">
+            <div style="text-align: center; padding: 2rem; color: #666; font-family: var(--font-pixel); font-size: 8px;">
+                🏆 NO ACTIVE CHALLENGES. CREATE ONE!
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="pixel-footer">
-        <p>MC Project — Your Personal Health & Wealth Companion</p>
-        <p style="margin-top: 0.5rem; font-size: 12px;">Built with ❤️ for GenZ</p>
+        <p>🎮 MC PROJECT — KAIROSOFT STYLE LIFE SIM</p>
+        <p style="margin-top: 0.5rem; font-size: 12px;">VRM #11318 | HEALTH + WEALTH TRACKER</p>
     </footer>
 
-    <!-- 3D Character Script -->
+    <!-- Health Detail Modal -->
+    <div class="modal-overlay" id="healthModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('health')">×</button>
+            <h2 class="modal-title">❤️ HEALTH DETAILS</h2>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Overall Health Score</span>
+                    <span class="detail-value" id="modalHealthScore">78/100</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Steps Today</span>
+                    <span class="detail-value">4,247 / 10,000</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Sleep Last Night</span>
+                    <span class="detail-value">7.5 hours</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Healthy Meals</span>
+                    <span class="detail-value">3 of 5</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Mental Health</span>
+                    <span class="detail-value">Good 😊</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Exercise Minutes</span>
+                    <span class="detail-value">25 min</span>
+                </div>
+            </div>
+            <div class="input-section">
+                <h3>➕ LOG HEALTH ACTIVITY</h3>
+                <div class="input-row">
+                    <select class="pixel-select" id="healthActivityType">
+                        <option value="steps">STEPS</option>
+                        <option value="sleep">SLEEP (HRS)</option>
+                        <option value="meal">HEALTHY MEAL</option>
+                        <option value="exercise">EXERCISE (MIN)</option>
+                    </select>
+                    <input type="number" class="pixel-input" id="healthActivityValue" placeholder="VALUE">
+                    <button onclick="logHealthActivity()" class="pixel-btn primary">ADD</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wealth Detail Modal -->
+    <div class="modal-overlay" id="wealthModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('wealth')">×</button>
+            <h2 class="modal-title">💰 WEALTH DETAILS</h2>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Overall Wealth Score</span>
+                    <span class="detail-value" id="modalWealthScore">65/100</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Total Savings</span>
+                    <span class="detail-value">$12,450</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Investments</span>
+                    <span class="detail-value">$8,200</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Gig Income (This Month)</span>
+                    <span class="detail-value">$3,800</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Monthly Expenses</span>
+                    <span class="detail-value">$2,100</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Debt</span>
+                    <span class="detail-value">$0 🎉</span>
+                </div>
+            </div>
+            <div class="input-section">
+                <h3>➕ LOG WEALTH ACTIVITY</h3>
+                <div class="input-row">
+                    <select class="pixel-select" id="wealthActivityType">
+                        <option value="income">INCOME</option>
+                        <option value="expense">EXPENSE</option>
+                        <option value="investment">INVESTMENT</option>
+                        <option value="gig">GIG WORK</option>
+                    </select>
+                    <input type="number" class="pixel-input" id="wealthActivityValue" placeholder="$ AMOUNT">
+                    <button onclick="logWealthActivity()" class="pixel-btn primary">ADD</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Challenge Modal -->
+    <div class="modal-overlay" id="challengeModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="hideChallengeModal()">×</button>
+            <h2 class="modal-title">🏆 CREATE CHALLENGE</h2>
+            <div class="input-row" style="flex-direction: column;">
+                <select class="pixel-select" id="challengeType">
+                    <option value="steps">👟 STEP BATTLE</option>
+                    <option value="savings">💰 SAVINGS RACE</option>
+                    <option value="workout">💪 WORKOUT STREAK</option>
+                    <option value="sleep">😴 SLEEP GOAL</option>
+                </select>
+                <input type="text" class="pixel-input" id="challengeFriend" placeholder="FRIEND'S NAME">
+                <input type="number" class="pixel-input" id="challengeGoal" placeholder="GOAL AMOUNT">
+                <select class="pixel-select" id="challengeDuration">
+                    <option value="1">1 DAY</option>
+                    <option value="3">3 DAYS</option>
+                    <option value="7" selected>7 DAYS</option>
+                    <option value="30">30 DAYS</option>
+                </select>
+                <button onclick="createChallenge()" class="pixel-btn primary" style="width: 100%;">CREATE CHALLENGE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js Character Script -->
     <script>
+        // ============================================
+        // THREE.JS VRM CHARACTER WITH KAIROSOFT THEME
+        // ============================================
+        
         let scene, camera, renderer, character, controls;
         let isWireframe = false;
         let currentPose = 0;
         let poseInterval;
+        let environmentObjects = [];
+        let unlockedItems = new Set();
         
-        // 10 poses that change every 10 seconds
+        // Growth State
+        const growthState = {
+            level: 1,
+            healthScore: 78,
+            wealthScore: 65,
+            combinedScore: 71,
+            stage: 'baby'
+        };
+        
+        // Level Configuration
+        const LEVELS = {
+            1: { name: 'BABY', emoji: '👶', minScore: 0, maxScore: 25, scale: 0.3, next: 25 },
+            2: { name: 'CHILD', emoji: '🧒', minScore: 25, maxScore: 50, scale: 0.5, next: 50 },
+            3: { name: 'TEEN', emoji: '🧑', minScore: 50, maxScore: 75, scale: 0.75, next: 75 },
+            4: { name: 'ADULT', emoji: '🎓', minScore: 75, maxScore: 100, scale: 1.0, next: 100 }
+        };
+        
+        // 10 Poses for Random Movement
         const poses = [
-            { name: 'Idle', rotation: { x: 0, y: 0, z: 0 }, position: { y: 0 } },
-            { name: 'Wave', rotation: { x: 0, y: 0.5, z: 0 }, position: { y: 0.1 } },
-            { name: 'Jump', rotation: { x: 0, y: -0.3, z: 0 }, position: { y: 0.3 } },
-            { name: 'Spin', rotation: { x: 0, y: Math.PI, z: 0 }, position: { y: 0 } },
-            { name: 'Dance', rotation: { x: 0.1, y: 0.8, z: 0 }, position: { y: 0.1 } },
-            { name: 'Sit', rotation: { x: -0.2, y: 0, z: 0 }, position: { y: -0.2 } },
-            { name: 'Celebrate', rotation: { x: 0, y: -0.5, z: 0.1 }, position: { y: 0.2 } },
-            { name: 'Stretch', rotation: { x: 0.2, y: 0.3, z: 0 }, position: { y: 0.05 } },
-            { name: 'Sleepy', rotation: { x: 0.3, y: 0, z: 0 }, position: { y: -0.1 } },
-            { name: 'Excited', rotation: { x: -0.1, y: 0.6, z: 0 }, position: { y: 0.15 } }
+            { name: 'IDLE', emoji: '🧍', rotation: { x: 0, y: 0, z: 0 }, position: { y: 0 } },
+            { name: 'WAVE', emoji: '👋', rotation: { x: 0, y: 0.5, z: 0 }, position: { y: 0.1 } },
+            { name: 'JUMP', emoji: '⬆️', rotation: { x: 0, y: -0.3, z: 0 }, position: { y: 0.3 } },
+            { name: 'SPIN', emoji: '🔄', rotation: { x: 0, y: Math.PI, z: 0 }, position: { y: 0 } },
+            { name: 'DANCE', emoji: '💃', rotation: { x: 0.1, y: 0.8, z: 0 }, position: { y: 0.1 } },
+            { name: 'SIT', emoji: '🪑', rotation: { x: -0.2, y: 0, z: 0 }, position: { y: -0.2 } },
+            { name: 'CELEBRATE', emoji: '🎉', rotation: { x: 0, y: -0.5, z: 0.1 }, position: { y: 0.2 } },
+            { name: 'STRETCH', emoji: '🙆', rotation: { x: 0.2, y: 0.3, z: 0 }, position: { y: 0.05 } },
+            { name: 'SLEEPY', emoji: '😴', rotation: { x: 0.3, y: 0, z: 0 }, position: { y: -0.1 } },
+            { name: 'EXCITED', emoji: '✨', rotation: { x: -0.1, y: 0.6, z: 0 }, position: { y: 0.15 } }
         ];
-
+        
+        // Wealth Milestones for Environment
+        const WEALTH_MILESTONES = [
+            { threshold: 10, name: 'BASIC LIGHT', emoji: '💡', type: 'basicLight' },
+            { threshold: 20, name: 'SMALL PLANT', emoji: '🌱', type: 'smallPlant' },
+            { threshold: 30, name: 'RUG', emoji: '🧶', type: 'rug' },
+            { threshold: 40, name: 'POSTER', emoji: '🖼️', type: 'poster' },
+            { threshold: 50, name: 'SMALL TABLE', emoji: '🛏️', type: 'smallTable' },
+            { threshold: 60, name: 'BETTER LAMP', emoji: '🛋️', type: 'betterLamp' },
+            { threshold: 70, name: 'BOOKSHELF', emoji: '📚', type: 'bookshelf' },
+            { threshold: 80, name: 'SMALL TV', emoji: '📺', type: 'smallTV' },
+            { threshold: 90, name: 'COMFY CHAIR', emoji: '🪑', type: 'comfyChair' },
+            { threshold: 100, name: 'COFFEE TABLE', emoji: '☕', type: 'coffeeTable' }
+        ];
+        
         function initCharacter() {
             const container = document.getElementById('character-canvas');
             const width = container.clientWidth;
             const height = container.clientHeight;
-
+            
             // Scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x1a1a2e);
-
+            
             // Camera
             camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
             camera.position.set(0, 1.2, 2.5);
-
+            
             // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
-
+            
             // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(2, 5, 3);
             directionalLight.castShadow = true;
             scene.add(directionalLight);
@@ -355,7 +1304,7 @@
             const rimLight = new THREE.DirectionalLight(0x00d4ff, 0.5);
             rimLight.position.set(-2, 3, -2);
             scene.add(rimLight);
-
+            
             // Ground
             const groundGeometry = new THREE.CircleGeometry(2, 32);
             const groundMaterial = new THREE.MeshBasicMaterial({ 
@@ -367,7 +1316,7 @@
             ground.rotation.x = -Math.PI / 2;
             ground.position.y = -0.5;
             scene.add(ground);
-
+            
             // Controls
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
@@ -375,17 +1324,23 @@
             controls.minDistance = 1.5;
             controls.maxDistance = 4;
             controls.enablePan = false;
-
+            
             // Load VRM
             loadVRM();
-
+            
             // Start pose rotation
             startPoseRotation();
-
+            
+            // Initialize environment
+            initEnvironment();
+            
             // Animation loop
             animate();
+            
+            // Hide loading
+            document.getElementById('loadingOverlay').classList.add('hidden');
         }
-
+        
         function loadVRM() {
             const loader = new THREE.GLTFLoader();
             
@@ -395,14 +1350,15 @@
             loader.load(
                 vrmUrl,
                 function(gltf) {
-                    console.log('VRM loaded successfully');
+                    console.log('✅ VRM #11318 loaded successfully');
                     
                     if (character) scene.remove(character);
                     
                     character = gltf.scene;
                     
-                    // Scale and position
-                    character.scale.set(0.4, 0.4, 0.4);
+                    // Scale and position based on level
+                    const scale = LEVELS[growthState.level].scale;
+                    character.scale.set(0.4 * scale, 0.4 * scale, 0.4 * scale);
                     character.position.set(0, -0.5, 0);
                     
                     // Enable shadows
@@ -414,23 +1370,23 @@
                     });
                     
                     scene.add(character);
-                    
-                    // Apply first pose
                     applyPose(0);
+                    
+                    showNotification('✅ VRM #11318 LOADED!');
                 },
                 function(xhr) {
                     const percent = Math.round((xhr.loaded / xhr.total) * 100);
                     console.log('VRM loading: ' + percent + '%');
                 },
                 function(error) {
-                    console.error('VRM load failed:', error);
+                    console.warn('⚠️ VRM load failed, using fallback:', error);
                     createFallbackCharacter();
                 }
             );
         }
         
         function createFallbackCharacter() {
-            // Create a pixel-style character as fallback
+            // Create pixel-style character as fallback
             const group = new THREE.Group();
             
             // Body
@@ -474,20 +1430,28 @@
             group.add(rightLeg);
             
             character = group;
-            character.scale.set(0.8, 0.8, 0.8);
+            const scale = LEVELS[growthState.level].scale;
+            character.scale.set(0.8 * scale, 0.8 * scale, 0.8 * scale);
             character.position.set(0, 0, 0);
             scene.add(character);
             
             applyPose(0);
+            showNotification('⚠️ USING FALLBACK CHARACTER');
         }
-
+        
         function applyPose(poseIndex) {
             if (!character) return;
             
             const pose = poses[poseIndex];
             
+            // Update movement indicator
+            const indicator = document.getElementById('movementIndicator');
+            if (indicator) {
+                indicator.innerHTML = `<span>${pose.emoji}</span><span>${pose.name}</span>`;
+            }
+            
             // Smooth transition
-            const duration = 500; // ms
+            const duration = 500;
             const startRot = character.rotation.clone();
             const startPos = character.position.clone();
             const startTime = Date.now();
@@ -495,14 +1459,13 @@
             function updatePose() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                
-                // Easing
                 const ease = 1 - Math.pow(1 - progress, 3);
                 
                 character.rotation.x = startRot.x + (pose.rotation.x - startRot.x) * ease;
                 character.rotation.y = startRot.y + (pose.rotation.y - startRot.y) * ease;
                 character.rotation.z = startRot.z + (pose.rotation.z - startRot.z) * ease;
                 
+                const scale = LEVELS[growthState.level].scale;
                 character.position.y = startPos.y + (pose.position.y - startPos.y) * ease;
                 
                 if (progress < 1) {
@@ -512,7 +1475,7 @@
             
             updatePose();
         }
-
+        
         function startPoseRotation() {
             // Change pose every 10 seconds
             poseInterval = setInterval(() => {
@@ -520,7 +1483,12 @@
                 applyPose(currentPose);
             }, 10000);
         }
-
+        
+        function randomPose() {
+            currentPose = Math.floor(Math.random() * poses.length);
+            applyPose(currentPose);
+        }
+        
         function animate() {
             requestAnimationFrame(animate);
             
@@ -532,13 +1500,13 @@
             controls.update();
             renderer.render(scene, camera);
         }
-
+        
         function rotateCharacter() {
             if (character) {
                 character.rotation.y += Math.PI / 2;
             }
         }
-
+        
         function toggleWireframe() {
             isWireframe = !isWireframe;
             if (character) {
@@ -549,7 +1517,7 @@
                 });
             }
         }
-
+        
         function resetView() {
             camera.position.set(0, 1.2, 2.5);
             camera.lookAt(0, 0, 0);
@@ -557,9 +1525,422 @@
                 applyPose(currentPose);
             }
         }
-
-        // Initialize on load
-        window.addEventListener('load', initCharacter);
+        
+        // Environment System
+        function initEnvironment() {
+            // Check and unlock items based on wealth
+            checkAndUnlockItems(growthState.wealthScore);
+        }
+        
+        function checkAndUnlockItems(wealthValue) {
+            WEALTH_MILESTONES.forEach(milestone => {
+                if (wealthValue >= milestone.threshold && !unlockedItems.has(milestone.type)) {
+                    unlockedItems.add(milestone.type);
+                    unlockItem(milestone);
+                }
+            });
+            
+            updateEnvironmentUI();
+        }
+        
+        function unlockItem(milestone) {
+            // Show notification
+            showNotification(`${milestone.emoji} UNLOCKED: ${milestone.name}!`);
+        }
+        
+        function updateEnvironmentUI() {
+            const envWealth = document.getElementById('envWealth');
+            const envHealth = document.getElementById('envHealth');
+            const envItems = document.getElementById('envItems');
+            
+            if (envWealth) {
+                const tiers = ['SMALL ROOM', 'COZY ROOM', 'NICE APARTMENT', 'MODERN HOME', 'BIG HOUSE'];
+                const tierIndex = Math.min(4, Math.floor(growthState.wealthScore / 20));
+                envWealth.textContent = tiers[tierIndex];
+            }
+            
+            if (envHealth) {
+                const healthTiers = ['GLOOMY', 'BRIGHT', 'SUNNY'];
+                const healthIndex = Math.min(2, Math.floor(growthState.healthScore / 33));
+                envHealth.textContent = healthTiers[healthIndex];
+            }
+            
+            if (envItems) {
+                const unlockedList = Array.from(unlockedItems).slice(-5);
+                const itemEmojis = {
+                    'basicLight': '💡', 'smallPlant': '🌱', 'rug': '🧶', 'poster': '🖼️', 'smallTable': '🛏️',
+                    'betterLamp': '🛋️', 'bookshelf': '📚', 'smallTV': '📺', 'comfyChair': '🪑', 'coffeeTable': '☕'
+                };
+                
+                if (unlockedList.length > 0) {
+                    envItems.innerHTML = unlockedList.map(item => 
+                        `<span class="env-item">${itemEmojis[item] || '✨'} ${item.replace(/([A-Z])/g, ' $1').trim().toUpperCase()}</span>`
+                    ).join('');
+                }
+            }
+        }
+        
+        // Growth System
+        function updateGrowth() {
+            growthState.combinedScore = Math.round((growthState.healthScore + growthState.wealthScore) / 2);
+            
+            // Determine level
+            let newLevel = 1;
+            for (let i = 4; i >= 1; i--) {
+                if (growthState.combinedScore >= LEVELS[i].minScore) {
+                    newLevel = i;
+                    break;
+                }
+            }
+            
+            if (newLevel !== growthState.level) {
+                growthState.level = newLevel;
+                showNotification(`🎉 LEVEL UP! NOW ${LEVELS[newLevel].name}!`);
+            }
+            
+            growthState.stage = LEVELS[growthState.level].name.toLowerCase();
+            
+            // Update UI
+            document.getElementById('currentLevel').textContent = growthState.level;
+            document.getElementById('stageLabel').textContent = `${LEVELS[growthState.level].emoji} ${LEVELS[growthState.level].name}`;
+            document.getElementById('growthScore').textContent = growthState.combinedScore;
+            
+            const progressInLevel = (growthState.combinedScore - LEVELS[growthState.level].minScore) / 
+                (LEVELS[growthState.level].maxScore - LEVELS[growthState.level].minScore) * 100;
+            document.getElementById('growthProgress').style.width = Math.min(100, Math.max(0, progressInLevel)) + '%';
+            
+            // Update markers
+            document.querySelectorAll('.level-marker').forEach(marker => {
+                const markerLevel = parseInt(marker.dataset.level);
+                marker.classList.remove('active', 'completed');
+                
+                if (markerLevel === growthState.level) {
+                    marker.classList.add('active');
+                } else if (markerLevel < growthState.level) {
+                    marker.classList.add('completed');
+                }
+            });
+            
+            // Update character scale
+            if (character) {
+                const targetScale = LEVELS[growthState.level].scale;
+                character.scale.set(0.4 * targetScale, 0.4 * targetScale, 0.4 * targetScale);
+            }
+            
+            // Update environment
+            checkAndUnlockItems(growthState.wealthScore);
+        }
+        
+        // Modal Functions
+        function openModal(type) {
+            document.getElementById(type + 'Modal').classList.add('active');
+            document.getElementById('modal' + type.charAt(0).toUpperCase() + type.slice(1) + 'Score').textContent = 
+                growthState[type + 'Score'] + '/100';
+        }
+        
+        function closeModal(type) {
+            document.getElementById(type + 'Modal').classList.remove('active');
+        }
+        
+        // Activity Logging
+        function logHealthActivity() {
+            const type = document.getElementById('healthActivityType').value;
+            const value = parseInt(document.getElementById('healthActivityValue').value);
+            
+            if (!value) return;
+            
+            // Update health score
+            growthState.healthScore = Math.min(100, growthState.healthScore + Math.floor(value / 10));
+            document.getElementById('healthScoreValue').textContent = growthState.healthScore;
+            document.getElementById('healthBar').style.width = growthState.healthScore + '%';
+            
+            updateGrowth();
+            showNotification(`✅ LOGGED ${type.toUpperCase()}: ${value}`);
+            document.getElementById('healthActivityValue').value = '';
+        }
+        
+        function logWealthActivity() {
+            const type = document.getElementById('wealthActivityType').value;
+            const value = parseInt(document.getElementById('wealthActivityValue').value);
+            
+            if (!value) return;
+            
+            // Update wealth score
+            if (type === 'income' || type === 'gig' || type === 'investment') {
+                growthState.wealthScore = Math.min(100, growthState.wealthScore + Math.floor(value / 100));
+            }
+            
+            document.getElementById('wealthScoreValue').textContent = growthState.wealthScore;
+            document.getElementById('wealthBar').style.width = growthState.wealthScore + '%';
+            
+            updateGrowth();
+            showNotification(`✅ LOGGED ${type.toUpperCase()}: $${value}`);
+            document.getElementById('wealthActivityValue').value = '';
+        }
+        
+        // Confession System
+        let confessions = JSON.parse(localStorage.getItem('mc_confessions') || '[]');
+        let confessionLikes = JSON.parse(localStorage.getItem('mc_confession_likes') || '{}');
+        const currentUser = 'anonymous_' + Math.random().toString(36).substr(2, 6);
+        
+        const confessionCategories = {
+            health: { name: '💪 HEALTH', color: '#4ade80' },
+            wealth: { name: '💰 WEALTH', color: '#fbbf24' },
+            mindset: { name: '🧠 MINDSET', color: '#a78bfa' },
+            relationship: { name: '❤️ RELATIONSHIPS', color: '#f472b6' },
+            work: { name: '💼 WORK', color: '#60a5fa' }
+        };
+        
+        function submitConfession() {
+            const input = document.getElementById('confessionInput');
+            const category = document.getElementById('confessionCategory').value;
+            const text = input.value.trim();
+            
+            if (!text || text.length < 10) {
+                showNotification('❌ MIN 10 CHARACTERS!');
+                return;
+            }
+            
+            const confession = {
+                id: Date.now().toString(),
+                text: text,
+                category: category,
+                timestamp: Date.now(),
+                likes: 0,
+                author: currentUser
+            };
+            
+            confessions.unshift(confession);
+            localStorage.setItem('mc_confessions', JSON.stringify(confessions));
+            
+            input.value = '';
+            document.getElementById('charCount').textContent = '0';
+            
+            renderConfessions();
+            showNotification('✅ CONFESSION POSTED!');
+        }
+        
+        function toggleLike(confessionId) {
+            const confession = confessions.find(c => c.id === confessionId);
+            if (!confession) return;
+            
+            const likeKey = `${currentUser}_${confessionId}`;
+            const hasLiked = confessionLikes[likeKey];
+            
+            if (hasLiked) {
+                confession.likes--;
+                delete confessionLikes[likeKey];
+            } else {
+                confession.likes++;
+                confessionLikes[likeKey] = true;
+            }
+            
+            localStorage.setItem('mc_confession_likes', JSON.stringify(confessionLikes));
+            localStorage.setItem('mc_confessions', JSON.stringify(confessions));
+            renderConfessions();
+        }
+        
+        function renderConfessions() {
+            const feed = document.getElementById('confessionFeed');
+            const count = document.getElementById('confessionCount');
+            
+            count.textContent = confessions.length;
+            
+            if (confessions.length === 0) {
+                feed.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #666; font-family: var(--font-pixel); font-size: 8px;">
+                        📝 NO CONFESSIONS YET. BE THE FIRST!
+                    </div>
+                `;
+                return;
+            }
+            
+            feed.innerHTML = confessions.map(confession => {
+                const cat = confessionCategories[confession.category];
+                const likeKey = `${currentUser}_${confession.id}`;
+                const hasLiked = confessionLikes[likeKey];
+                const timeAgo = getTimeAgo(confession.timestamp);
+                
+                return `
+                    <div class="confession-card">
+                        <span class="confession-category-tag" style="background: ${cat.color}20; color: ${cat.color}">
+                            ${cat.name}
+                        </span>
+                        <div class="confession-text">${escapeHtml(confession.text)}</div>
+                        <div class="confession-footer">
+                            <span>${timeAgo} • ${confession.likes} LIKES</span>
+                            <div class="confession-actions">
+                                <button class="action-btn ${hasLiked ? 'liked' : ''}" onclick="toggleLike('${confession.id}')">
+                                    ${hasLiked ? '❤️' : '🤍'} ${confession.likes}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Challenge System
+        let challenges = JSON.parse(localStorage.getItem('mc_challenges') || '[]');
+        
+        const challengeTypes = {
+            steps: { name: '👟 STEP BATTLE', icon: '👟', unit: 'STEPS' },
+            savings: { name: '💰 SAVINGS RACE', icon: '💰', unit: '$' },
+            workout: { name: '💪 WORKOUT STREAK', icon: '💪', unit: 'SESSIONS' },
+            sleep: { name: '😴 SLEEP GOAL', icon: '😴', unit: 'HOURS' }
+        };
+        
+        function showChallengeModal() {
+            document.getElementById('challengeModal').classList.add('active');
+        }
+        
+        function hideChallengeModal() {
+            document.getElementById('challengeModal').classList.remove('active');
+        }
+        
+        function createChallenge() {
+            const type = document.getElementById('challengeType').value;
+            const friend = document.getElementById('challengeFriend').value.trim();
+            const goal = parseInt(document.getElementById('challengeGoal').value);
+            const duration = parseInt(document.getElementById('challengeDuration').value);
+            
+            if (!friend || !goal) {
+                showNotification('❌ FILL ALL FIELDS!');
+                return;
+            }
+            
+            const challenge = {
+                id: Date.now().toString(),
+                type: type,
+                opponent: friend,
+                goal: goal,
+                duration: duration,
+                createdAt: Date.now(),
+                myProgress: 0,
+                theirProgress: 0,
+                status: 'active'
+            };
+            
+            challenges.push(challenge);
+            localStorage.setItem('mc_challenges', JSON.stringify(challenges));
+            
+            hideChallengeModal();
+            renderChallenges();
+            showNotification('🏆 CHALLENGE CREATED!');
+            
+            document.getElementById('challengeFriend').value = '';
+            document.getElementById('challengeGoal').value = '';
+        }
+        
+        function renderChallenges() {
+            const list = document.getElementById('challengeList');
+            const active = challenges.filter(c => c.status === 'active');
+            
+            if (active.length === 0) {
+                list.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #666; font-family: var(--font-pixel); font-size: 8px;">
+                        🏆 NO ACTIVE CHALLENGES. CREATE ONE!
+                    </div>
+                `;
+                return;
+            }
+            
+            list.innerHTML = active.map(c => {
+                const type = challengeTypes[c.type];
+                const myPercent = Math.min(100, (c.myProgress / c.goal) * 100);
+                const daysLeft = Math.ceil((c.createdAt + (c.duration * 24 * 60 * 60 * 1000) - Date.now()) / (24 * 60 * 60 * 1000));
+                
+                return `
+                    <div class="challenge-card">
+                        <div class="challenge-title">${type.name}</div>
+                        <div style="font-size: 14px; color: #888; margin-bottom: 0.5rem;">
+                            VS ${c.opponent} • ${daysLeft > 0 ? daysLeft + ' DAYS LEFT' : 'ENDED'}
+                        </div>
+                        <div style="font-size: 12px; color: var(--pixel-cyan); margin-bottom: 0.5rem;">
+                            GOAL: ${c.goal} ${type.unit}
+                        </div>
+                        <div class="challenge-progress-bar">
+                            <div class="challenge-progress-fill" style="width: ${myPercent}%"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 12px;">
+                            <span>YOU: ${c.myProgress}</span>
+                            <span>THEM: ${c.theirProgress}</span>
+                        </div>
+                        <button onclick="addChallengeProgress('${c.id}')" class="pixel-btn" style="margin-top: 0.5rem; width: 100%;">
+                            ➕ ADD PROGRESS
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function addChallengeProgress(challengeId) {
+            const challenge = challenges.find(c => c.id === challengeId);
+            if (!challenge) return;
+            
+            const increment = Math.floor(Math.random() * 10) + 5;
+            challenge.myProgress = Math.min(challenge.goal, challenge.myProgress + increment);
+            
+            // Simulate opponent progress
+            challenge.theirProgress = Math.min(challenge.goal, challenge.theirProgress + Math.floor(Math.random() * 8) + 3);
+            
+            if (challenge.myProgress >= challenge.goal) {
+                challenge.status = 'completed';
+                showNotification('🎉 YOU WON THE CHALLENGE!');
+            }
+            
+            localStorage.setItem('mc_challenges', JSON.stringify(challenges));
+            renderChallenges();
+        }
+        
+        // Utilities
+        function getTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return 'JUST NOW';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}M AGO`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}H AGO`;
+            return `${Math.floor(hours / 24)}D AGO`;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slide-out 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // Character counter
+        document.getElementById('confessionInput')?.addEventListener('input', (e) => {
+            document.getElementById('charCount').textContent = e.target.value.length;
+        });
+        
+        // Close modals on outside click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            initCharacter();
+            renderConfessions();
+            renderChallenges();
+            updateGrowth();
+        });
         
         window.addEventListener('resize', () => {
             if (camera && renderer) {
@@ -570,7 +1951,7 @@
             }
         });
         
-        // Cleanup on page unload
+        // Cleanup
         window.addEventListener('beforeunload', () => {
             if (poseInterval) clearInterval(poseInterval);
         });
