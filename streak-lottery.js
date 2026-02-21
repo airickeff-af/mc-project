@@ -98,19 +98,79 @@ const StreakLotterySystem = {
 
     renderMilestones() {
         const milestones = [
-            { days: 3, reward: '🎁 Mystery Box', claimed: (this.streakData.streak || 0) >= 3 },
-            { days: 7, reward: '👑 Crown Avatar', claimed: (this.streakData.streak || 0) >= 7 },
-            { days: 14, reward: '💎 2x Forever', claimed: (this.streakData.streak || 0) >= 14 },
-            { days: 30, reward: '🏆 Legend Badge', claimed: (this.streakData.streak || 0) >= 30 }
+            { days: 3, reward: '🎁 Mystery Box', type: 'mystery', value: 1 },
+            { days: 7, reward: '👑 Crown Avatar', type: 'cosmetic', value: 'crown' },
+            { days: 14, reward: '💎 2x Forever', type: 'multiplier', value: 2 },
+            { days: 30, reward: '🏆 Legend Badge', type: 'badge', value: 'legend' }
         ];
 
-        return milestones.map(m => `
-            <div class="milestone ${m.claimed ? 'claimed' : ''}">
+        // Track claimed milestones
+        if (!this.streakData.claimedMilestones) {
+            this.streakData.claimedMilestones = [];
+        }
+
+        return milestones.map(m => {
+            const canClaim = (this.streakData.streak || 0) >= m.days && 
+                            !this.streakData.claimedMilestones.includes(m.days);
+            const claimed = this.streakData.claimedMilestones.includes(m.days);
+            
+            return `
+            <div class="milestone ${claimed ? 'claimed' : ''} ${canClaim ? 'claimable' : ''}" 
+                 ${canClaim ? `onclick="StreakLotterySystem.claimMilestone(${m.days}, '${m.type}', ${m.value})"` : ''}>
                 <span class="milestone-days">${m.days}d</span>
                 <span class="milestone-reward">${m.reward}</span>
-                <span class="milestone-status">${m.claimed ? '✅' : '🔒'}</span>
+                <span class="milestone-status">
+                    ${claimed ? '✅ CLAIMED' : canClaim ? '👆 CLICK TO CLAIM' : '🔒'}
+                </span>
             </div>
-        `).join('');
+        `}).join('');
+    },
+
+    // P1-028: Claim milestone reward
+    claimMilestone(days, type, value) {
+        if (!this.streakData.claimedMilestones) {
+            this.streakData.claimedMilestones = [];
+        }
+        
+        // Check if already claimed
+        if (this.streakData.claimedMilestones.includes(days)) {
+            return;
+        }
+        
+        // Mark as claimed
+        this.streakData.claimedMilestones.push(days);
+        this.saveStreak();
+        
+        // Apply reward
+        let rewardMessage = '';
+        switch(type) {
+            case 'coins':
+                const coins = (this.streakData.coins || 0) + value;
+                this.streakData.coins = coins;
+                rewardMessage = `💰 +${value} COINS!`;
+                break;
+            case 'mystery':
+                rewardMessage = '🎁 MYSTERY BOX UNLOCKED!';
+                break;
+            case 'cosmetic':
+                if (!this.streakData.cosmetics) this.streakData.cosmetics = [];
+                this.streakData.cosmetics.push(value);
+                rewardMessage = `👑 ${value.toUpperCase()} UNLOCKED!`;
+                break;
+            case 'multiplier':
+                this.streakData.permanentMultiplier = value;
+                rewardMessage = `💎 ${value}x PERMANENT MULTIPLIER!`;
+                break;
+            case 'badge':
+                if (!this.streakData.badges) this.streakData.badges = [];
+                this.streakData.badges.push(value);
+                rewardMessage = `🏆 ${value.toUpperCase()} BADGE EARNED!`;
+                break;
+        }
+        
+        this.saveStreak();
+        this.showNotification(`🎉 STREAK BONUS: ${rewardMessage}`);
+        this.renderLotterySection(); // Re-render to update UI
     },
 
     scratchCard() {
@@ -374,6 +434,34 @@ const StreakLotterySystem = {
 
             .milestone.claimed .milestone-reward {
                 color: #00d4ff;
+            }
+
+            .milestone.claimable {
+                border-color: #ffd700;
+                background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+                cursor: pointer;
+                animation: milestone-pulse 1.5s ease-in-out infinite;
+            }
+
+            @keyframes milestone-pulse {
+                0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+                50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+            }
+
+            .milestone.claimable:hover {
+                transform: translateX(5px);
+                border-color: #ffed4e;
+            }
+
+            .milestone.claimable .milestone-status {
+                color: #ffd700;
+                font-weight: bold;
+                animation: status-blink 1s ease-in-out infinite;
+            }
+
+            @keyframes status-blink {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
             }
         `;
         document.head.appendChild(styles);
