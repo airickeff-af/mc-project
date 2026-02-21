@@ -2047,6 +2047,17 @@
                             if (child.isMesh) {
                                 child.castShadow = true;
                                 child.receiveShadow = true;
+                                
+                                // Remove blue/cyan artifacts (floating planes)
+                                const color = child.material?.color;
+                                if (color) {
+                                    const hex = color.getHex();
+                                    // Check for bright blue/cyan colors (artifacts)
+                                    if (hex === 0x00d4ff || hex === 0x4ecdc4 || hex === 0x00ffff) {
+                                        console.log('🧹 Removing blue artifact:', child.name);
+                                        child.visible = false;
+                                    }
+                                }
                             }
                         });
                         
