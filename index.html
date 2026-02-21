@@ -979,6 +979,7 @@
                 <button class="pixel-btn" onclick="resetView()">🏠 RESET</button>
                 <button class="pixel-btn" onclick="randomPose()">🎲 POSE</button>
                 <button class="pixel-btn meditate" id="meditateBtn" onclick="toggleMeditation()">🧘 MEDITATE</button>
+                <button class="pixel-btn" style="background: linear-gradient(135deg, #ff6b9d, #ff8fab);" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
                 <div style="position: relative; display: inline-block;">
                     <button class="pixel-btn holiday" id="holidayBtn" onclick="toggleHolidayMenu()">🎄 HOLIDAY</button>
                     <div class="holiday-menu" id="holidayMenu">
@@ -1432,8 +1433,8 @@
         function loadVRM() {
             const loader = new THREE.GLTFLoader();
             
-            // VRM URL - Meebit #11318
-            const vrmUrl = 'https://files.meebits.app/vrm/11318.vrm';
+            // VRM URL - Meebit #11318 with CORS proxy
+            const vrmUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm');
             
             // Set a timeout to ensure we show something even if loading hangs
             const loadTimeout = setTimeout(() => {
@@ -1441,7 +1442,7 @@
                 if (!character) {
                     createFallbackCharacter();
                 }
-            }, 10000); // 10 second timeout
+            }, 15000); // 15 second timeout
             
             loader.load(
                 vrmUrl,
@@ -1600,6 +1601,107 @@
             currentPose = Math.floor(Math.random() * poses.length);
             applyPose(currentPose);
         }
+        
+        // FULLSCREEN MODE
+        let isFullscreen = false;
+        function toggleFullscreen() {
+            isFullscreen = !isFullscreen;
+            const canvas = document.getElementById('character-canvas');
+            
+            if (isFullscreen) {
+                // Hide UI elements
+                document.querySelector('.pixel-header').style.display = 'none';
+                document.querySelector('.viewer-controls').style.display = 'none';
+                document.querySelector('.growth-panel').style.display = 'none';
+                document.querySelector('.environment-panel').style.display = 'none';
+                document.querySelector('.character-overlay').style.display = 'none';
+                document.querySelector('.movement-indicator').style.display = 'none';
+                document.querySelector('.viewer-title').style.display = 'none';
+                
+                // Expand canvas
+                canvas.style.position = 'fixed';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                canvas.style.width = '100vw';
+                canvas.style.height = '100vh';
+                canvas.style.zIndex = '9999';
+                
+                // Resize renderer
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                
+                // Request browser fullscreen
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                }
+                
+                showNotification('⛶ FULLSCREEN MODE - Press ESC to exit');
+            } else {
+                // Show UI elements
+                document.querySelector('.pixel-header').style.display = 'flex';
+                document.querySelector('.viewer-controls').style.display = 'flex';
+                document.querySelector('.growth-panel').style.display = 'block';
+                document.querySelector('.environment-panel').style.display = 'block';
+                document.querySelector('.character-overlay').style.display = 'flex';
+                document.querySelector('.movement-indicator').style.display = 'flex';
+                document.querySelector('.viewer-title').style.display = 'block';
+                
+                // Reset canvas
+                canvas.style.position = 'relative';
+                canvas.style.top = 'auto';
+                canvas.style.left = 'auto';
+                canvas.style.width = '100%';
+                canvas.style.height = '400px';
+                canvas.style.zIndex = 'auto';
+                
+                // Resize renderer
+                const container = document.getElementById('character-canvas');
+                renderer.setSize(container.clientWidth, 400);
+                camera.aspect = container.clientWidth / 400;
+                camera.updateProjectionMatrix();
+                
+                // Exit browser fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+        
+        // ESC key to exit fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                toggleFullscreen();
+            }
+        });
+        
+        // Handle browser fullscreen change
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && isFullscreen) {
+                isFullscreen = false;
+                // Reset UI
+                document.querySelector('.pixel-header').style.display = 'flex';
+                document.querySelector('.viewer-controls').style.display = 'flex';
+                document.querySelector('.growth-panel').style.display = 'block';
+                document.querySelector('.environment-panel').style.display = 'block';
+                document.querySelector('.character-overlay').style.display = 'flex';
+                document.querySelector('.movement-indicator').style.display = 'flex';
+                document.querySelector('.viewer-title').style.display = 'block';
+                
+                const canvas = document.getElementById('character-canvas');
+                canvas.style.position = 'relative';
+                canvas.style.top = 'auto';
+                canvas.style.left = 'auto';
+                canvas.style.width = '100%';
+                canvas.style.height = '400px';
+                canvas.style.zIndex = 'auto';
+                
+                const container = document.getElementById('character-canvas');
+                renderer.setSize(container.clientWidth, 400);
+                camera.aspect = container.clientWidth / 400;
+                camera.updateProjectionMatrix();
+            }
+        });
         
         function animate() {
             requestAnimationFrame(animate);
