@@ -1930,6 +1930,62 @@
             { threshold: 90, name: 'COMFY CHAIR', emoji: '🪑', type: 'comfyChair' },
             { threshold: 100, name: 'COFFEE TABLE', emoji: '☕', type: 'coffeeTable' }
         ];
+
+        // Environment Tiers (P1-027)
+        const ENVIRONMENT_TIERS = [
+            { 
+                name: 'SMALL ROOM', 
+                emoji: '🏠', 
+                minWealth: 0, 
+                bgColor: 0x1a1a2e,
+                floorColor: 0x0f0f1a,
+                lighting: 0.6,
+                fog: true,
+                fogColor: 0x1a1a2e
+            },
+            { 
+                name: 'COZY APARTMENT', 
+                emoji: '🏢', 
+                minWealth: 25, 
+                bgColor: 0x2d1b4e,
+                floorColor: 0x1a1a2e,
+                lighting: 0.7,
+                fog: true,
+                fogColor: 0x2d1b4e
+            },
+            { 
+                name: 'NICE HOUSE', 
+                emoji: '🏡', 
+                minWealth: 50, 
+                bgColor: 0x1e3a5f,
+                floorColor: 0x2d1b4e,
+                lighting: 0.8,
+                fog: false,
+                fogColor: 0x1e3a5f
+            },
+            { 
+                name: 'LUXURY MANSION', 
+                emoji: '🏰', 
+                minWealth: 75, 
+                bgColor: 0x2a2a4e,
+                floorColor: 0x1e3a5f,
+                lighting: 0.9,
+                fog: false,
+                fogColor: 0x2a2a4e
+            },
+            { 
+                name: 'ROYAL PALACE', 
+                emoji: '👑', 
+                minWealth: 90, 
+                bgColor: 0x3d1b6e,
+                floorColor: 0x2a2a4e,
+                lighting: 1.0,
+                fog: false,
+                fogColor: 0x3d1b6e
+            }
+        ];
+
+        let currentEnvironmentTier = 0;
         
         function initCharacter() {
             const container = document.getElementById('character-canvas');
@@ -2705,10 +2761,16 @@
             const envHealth = document.getElementById('envHealth');
             const envItems = document.getElementById('envItems');
             
+            // P1-027: Environment Tier System
+            const newTier = getEnvironmentTier(growthState.wealthScore);
+            if (newTier !== currentEnvironmentTier) {
+                currentEnvironmentTier = newTier;
+                transitionEnvironmentTier(newTier);
+            }
+            
             if (envWealth) {
-                const tiers = ['SMALL ROOM', 'COZY ROOM', 'NICE APARTMENT', 'MODERN HOME', 'BIG HOUSE'];
-                const tierIndex = Math.min(4, Math.floor(growthState.wealthScore / 20));
-                envWealth.textContent = tiers[tierIndex];
+                const tier = ENVIRONMENT_TIERS[currentEnvironmentTier];
+                envWealth.textContent = `${tier.emoji} ${tier.name}`;
             }
             
             if (envHealth) {
@@ -2730,6 +2792,120 @@
                     ).join('');
                 }
             }
+        }
+
+        // P1-027: Get environment tier based on wealth
+        function getEnvironmentTier(wealthScore) {
+            for (let i = ENVIRONMENT_TIERS.length - 1; i >= 0; i--) {
+                if (wealthScore >= ENVIRONMENT_TIERS[i].minWealth) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        // P1-027: Smooth transition between environment tiers
+        function transitionEnvironmentTier(tierIndex) {
+            const tier = ENVIRONMENT_TIERS[tierIndex];
+            
+            // Show notification
+            showNotification(`🏠 ENVIRONMENT UPGRADED: ${tier.emoji} ${tier.name}!`);
+            
+            // Animate background color transition
+            const startColor = scene.background.clone();
+            const endColor = new THREE.Color(tier.bgColor);
+            const duration = 2000; // 2 seconds
+            const startTime = Date.now();
+            
+            function animateTransition() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+                
+                scene.background.lerpColors(startColor, endColor, ease);
+                
+                // Update fog if enabled
+                if (tier.fog && scene.fog) {
+                    scene.fog.color.lerpColors(startColor, endColor, ease);
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateTransition);
+                } else {
+                    // Update lighting intensity
+                    scene.traverse((child) => {
+                        if (child.isLight && child.type === 'AmbientLight') {
+                            child.intensity = tier.lighting;
+                        }
+                    });
+                }
+            }
+            
+            animateTransition();
+            
+            // Add particle burst effect
+            createTierUpgradeParticles();
+        }
+
+        // P1-027: Particle burst on tier upgrade
+        function createTierUpgradeParticles() {
+            const particleCount = 50;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = 0;
+                positions[i * 3 + 1] = 0;
+                positions[i * 3 + 2] = 0;
+                
+                velocities.push({
+                    x: (Math.random() - 0.5) * 0.1,
+                    y: Math.random() * 0.1 + 0.05,
+                    z: (Math.random() - 0.5) * 0.1
+                });
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: 0xffd700,
+                size: 0.05,
+                transparent: true,
+                opacity: 1
+            });
+            
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+            
+            const startTime = Date.now();
+            const duration = 2000;
+            
+            function animateParticles() {
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / duration;
+                
+                if (progress >= 1) {
+                    scene.remove(particles);
+                    geometry.dispose();
+                    material.dispose();
+                    return;
+                }
+                
+                const positions = particles.geometry.attributes.position.array;
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] += velocities[i].x;
+                    positions[i * 3 + 1] += velocities[i].y;
+                    positions[i * 3 + 2] += velocities[i].z;
+                    velocities[i].y -= 0.002; // Gravity
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+                material.opacity = 1 - progress;
+                
+                requestAnimationFrame(animateParticles);
+            }
+            
+            animateParticles();
         }
         
         // Growth System
