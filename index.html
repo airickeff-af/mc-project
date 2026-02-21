@@ -1316,21 +1316,21 @@
         let environmentObjects = [];
         let unlockedItems = new Set();
         
-        // Growth State
+        // Growth State - DISABLED for VRM display fix
         const growthState = {
-            level: 1,
+            level: 4, // Fixed at ADULT
             healthScore: 78,
             wealthScore: 65,
             combinedScore: 71,
-            stage: 'baby'
+            stage: 'adult'
         };
         
-        // Level Configuration - FIXED SCALE (growth feature removed for VRM display)
+        // Level Configuration - ALL FIXED AT SCALE 1.0 (growth disabled)
         const LEVELS = {
-            1: { name: 'BABY', emoji: '👶', minScore: 0, maxScore: 25, scale: 1.0, next: 25 },
-            2: { name: 'CHILD', emoji: '🧒', minScore: 25, maxScore: 50, scale: 1.0, next: 50 },
-            3: { name: 'TEEN', emoji: '🧑', minScore: 50, maxScore: 75, scale: 1.0, next: 75 },
-            4: { name: 'ADULT', emoji: '🎓', minScore: 75, maxScore: 100, scale: 1.0, next: 100 }
+            1: { name: 'ADULT', emoji: '🎓', minScore: 0, maxScore: 100, scale: 1.0, next: 100 },
+            2: { name: 'ADULT', emoji: '🎓', minScore: 0, maxScore: 100, scale: 1.0, next: 100 },
+            3: { name: 'ADULT', emoji: '🎓', minScore: 0, maxScore: 100, scale: 1.0, next: 100 },
+            4: { name: 'ADULT', emoji: '🎓', minScore: 0, maxScore: 100, scale: 1.0, next: 100 }
         };
         
         // 10 Poses for Random Movement
