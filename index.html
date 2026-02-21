@@ -2509,12 +2509,13 @@
                     break;
                     
                 case 'poster':
-                    // Wall poster (floating plane)
+                    // Wall poster (floating plane) - moved to side, muted color
                     const poster = new THREE.Mesh(
                         new THREE.PlaneGeometry(0.3, 0.4),
-                        new THREE.MeshPhongMaterial({ color: 0x00d4ff, side: THREE.DoubleSide })
+                        new THREE.MeshPhongMaterial({ color: 0x444444, side: THREE.DoubleSide })
                     );
-                    poster.position.set(0, 0.5, -0.8);
+                    poster.position.set(0.6, 0.5, -0.6);
+                    poster.rotation.y = -0.3;
                     group.add(poster);
                     break;
                     
@@ -2613,12 +2614,12 @@
                     tvScreen.position.y = 0.35;
                     group.add(tvScreen);
                     
-                    // Screen glow
+                    // Screen glow - dimmed and positioned behind screen
                     const tvGlow = new THREE.Mesh(
-                        new THREE.PlaneGeometry(0.35, 0.2),
-                        new THREE.MeshBasicMaterial({ color: 0x00d4ff })
+                        new THREE.PlaneGeometry(0.3, 0.15),
+                        new THREE.MeshBasicMaterial({ color: 0x223344, transparent: true, opacity: 0.5 })
                     );
-                    tvGlow.position.set(0, 0.35, 0.03);
+                    tvGlow.position.set(0, 0.35, 0.026);
                     group.add(tvGlow);
                     break;
                     
