@@ -1435,17 +1435,26 @@
             // VRM URL - Meebit #11318
             const vrmUrl = 'https://files.meebits.app/vrm/11318.vrm';
             
+            // Set a timeout to ensure we show something even if loading hangs
+            const loadTimeout = setTimeout(() => {
+                console.warn('⏱️ VRM loading timeout, creating fallback...');
+                if (!character) {
+                    createFallbackCharacter();
+                }
+            }, 10000); // 10 second timeout
+            
             loader.load(
                 vrmUrl,
                 function(gltf) {
+                    clearTimeout(loadTimeout);
                     console.log('✅ VRM #11318 loaded successfully');
                     
                     if (character) scene.remove(character);
                     
                     character = gltf.scene;
                     
-                    // Scale and position based on level
-                    const scale = LEVELS[growthState.level].scale;
+                    // ALWAYS load VRM regardless of growth level - scale is applied after
+                    const scale = LEVELS[growthState.level]?.scale || 1.0;
                     character.scale.set(0.4 * scale, 0.4 * scale, 0.4 * scale);
                     character.position.set(0, -0.5, 0);
                     
@@ -1460,13 +1469,20 @@
                     scene.add(character);
                     applyPose(0);
                     
+                    // Hide loading overlay
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                    
                     showNotification('✅ VRM #11318 LOADED!');
                 },
                 function(xhr) {
-                    const percent = Math.round((xhr.loaded / xhr.total) * 100);
-                    console.log('VRM loading: ' + percent + '%');
+                    if (xhr.total > 0) {
+                        const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                        console.log('VRM loading: ' + percent + '%');
+                        document.querySelector('.loading-text').textContent = `LOADING VRM #11318... ${percent}%`;
+                    }
                 },
                 function(error) {
+                    clearTimeout(loadTimeout);
                     console.warn('⚠️ VRM load failed, using fallback:', error);
                     createFallbackCharacter();
                 }
@@ -1474,6 +1490,11 @@
         }
         
         function createFallbackCharacter() {
+            // Remove any existing character first
+            if (character) {
+                scene.remove(character);
+            }
+            
             // Create pixel-style character as fallback
             const group = new THREE.Group();
             
@@ -1518,12 +1539,16 @@
             group.add(rightLeg);
             
             character = group;
-            const scale = LEVELS[growthState.level].scale;
+            const scale = LEVELS[growthState.level]?.scale || 1.0;
             character.scale.set(0.8 * scale, 0.8 * scale, 0.8 * scale);
             character.position.set(0, 0, 0);
             scene.add(character);
             
             applyPose(0);
+            
+            // Hide loading overlay
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            
             showNotification('⚠️ USING FALLBACK CHARACTER');
         }
         
@@ -1616,17 +1641,27 @@
         
         // Environment System
         function initEnvironment() {
+            // Clear any existing environment objects
+            environmentObjects.forEach(obj => scene.remove(obj));
+            environmentObjects = [];
+            
             // Check and unlock items based on wealth
             checkAndUnlockItems(growthState.wealthScore);
         }
         
         function checkAndUnlockItems(wealthValue) {
+            let newUnlocks = false;
             WEALTH_MILESTONES.forEach(milestone => {
                 if (wealthValue >= milestone.threshold && !unlockedItems.has(milestone.type)) {
                     unlockedItems.add(milestone.type);
                     unlockItem(milestone);
+                    newUnlocks = true;
                 }
             });
+            
+            if (newUnlocks) {
+                renderEnvironmentObjects();
+            }
             
             updateEnvironmentUI();
         }
@@ -1634,6 +1669,269 @@
         function unlockItem(milestone) {
             // Show notification
             showNotification(`${milestone.emoji} UNLOCKED: ${milestone.name}!`);
+        }
+        
+        function renderEnvironmentObjects() {
+            // Clear existing environment objects
+            environmentObjects.forEach(obj => scene.remove(obj));
+            environmentObjects = [];
+            
+            const unlockedList = Array.from(unlockedItems);
+            
+            // Create 3D objects for each unlocked item
+            unlockedList.forEach((itemType, index) => {
+                const obj = createEnvironmentObject(itemType, index, unlockedList.length);
+                if (obj) {
+                    scene.add(obj);
+                    environmentObjects.push(obj);
+                }
+            });
+        }
+        
+        function createEnvironmentObject(type, index, total) {
+            const group = new THREE.Group();
+            
+            // Position items in a semi-circle around the character
+            const angle = (index / Math.max(total, 1)) * Math.PI - Math.PI / 2;
+            const radius = 1.2;
+            group.position.set(
+                Math.sin(angle) * radius,
+                -0.5,
+                Math.cos(angle) * radius - 0.5
+            );
+            
+            switch(type) {
+                case 'basicLight':
+                    // Simple lamp post
+                    const lampPost = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.02, 0.02, 0.6),
+                        new THREE.MeshPhongMaterial({ color: 0x666666 })
+                    );
+                    lampPost.position.y = 0.3;
+                    group.add(lampPost);
+                    
+                    const lampShade = new THREE.Mesh(
+                        new THREE.ConeGeometry(0.1, 0.15, 8),
+                        new THREE.MeshPhongMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 0.3 })
+                    );
+                    lampShade.position.y = 0.6;
+                    group.add(lampShade);
+                    
+                    // Add point light
+                    const light = new THREE.PointLight(0xffffaa, 0.5, 2);
+                    light.position.y = 0.5;
+                    group.add(light);
+                    break;
+                    
+                case 'smallPlant':
+                    // Pot
+                    const pot = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.08, 0.06, 0.12, 8),
+                        new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+                    );
+                    pot.position.y = 0.06;
+                    group.add(pot);
+                    
+                    // Plant
+                    const plant = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.08, 8, 8),
+                        new THREE.MeshPhongMaterial({ color: 0x4ade80 })
+                    );
+                    plant.position.y = 0.18;
+                    group.add(plant);
+                    break;
+                    
+                case 'rug':
+                    // Simple rug on the ground
+                    const rug = new THREE.Mesh(
+                        new THREE.CircleGeometry(0.4, 32),
+                        new THREE.MeshPhongMaterial({ color: 0x9d4edd, side: THREE.DoubleSide })
+                    );
+                    rug.rotation.x = -Math.PI / 2;
+                    rug.position.y = 0.01;
+                    rug.position.x = 0;
+                    rug.position.z = 0;
+                    group.add(rug);
+                    break;
+                    
+                case 'poster':
+                    // Wall poster (floating plane)
+                    const poster = new THREE.Mesh(
+                        new THREE.PlaneGeometry(0.3, 0.4),
+                        new THREE.MeshPhongMaterial({ color: 0x00d4ff, side: THREE.DoubleSide })
+                    );
+                    poster.position.set(0, 0.5, -0.8);
+                    group.add(poster);
+                    break;
+                    
+                case 'smallTable':
+                    // Simple table
+                    const tableTop = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.4, 0.05, 0.3),
+                        new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+                    );
+                    tableTop.position.y = 0.25;
+                    group.add(tableTop);
+                    
+                    const leg1 = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.03, 0.25, 0.03),
+                        new THREE.MeshPhongMaterial({ color: 0x654321 })
+                    );
+                    leg1.position.set(-0.15, 0.125, -0.1);
+                    group.add(leg1);
+                    
+                    const leg2 = leg1.clone();
+                    leg2.position.set(0.15, 0.125, -0.1);
+                    group.add(leg2);
+                    
+                    const leg3 = leg1.clone();
+                    leg3.position.set(-0.15, 0.125, 0.1);
+                    group.add(leg3);
+                    
+                    const leg4 = leg1.clone();
+                    leg4.position.set(0.15, 0.125, 0.1);
+                    group.add(leg4);
+                    break;
+                    
+                case 'betterLamp':
+                    // Modern lamp
+                    const modernLampBase = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.06, 0.08, 0.05),
+                        new THREE.MeshPhongMaterial({ color: 0x333333 })
+                    );
+                    modernLampBase.position.y = 0.025;
+                    group.add(modernLampBase);
+                    
+                    const modernLampPole = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.015, 0.015, 0.5),
+                        new THREE.MeshPhongMaterial({ color: 0x444444 })
+                    );
+                    modernLampPole.position.y = 0.275;
+                    group.add(modernLampPole);
+                    
+                    const modernLampHead = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.1, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+                        new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.2 })
+                    );
+                    modernLampHead.position.y = 0.55;
+                    group.add(modernLampHead);
+                    
+                    const modernLight = new THREE.PointLight(0xffffff, 0.6, 2.5);
+                    modernLight.position.y = 0.5;
+                    group.add(modernLight);
+                    break;
+                    
+                case 'bookshelf':
+                    // Bookshelf
+                    const shelf = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.5, 0.6, 0.15),
+                        new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+                    );
+                    shelf.position.y = 0.3;
+                    group.add(shelf);
+                    
+                    // Books
+                    const bookColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
+                    for (let i = 0; i < 5; i++) {
+                        const book = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.04, 0.18, 0.12),
+                            new THREE.MeshPhongMaterial({ color: bookColors[i] })
+                        );
+                        book.position.set(-0.15 + i * 0.08, 0.45, 0);
+                        group.add(book);
+                    }
+                    break;
+                    
+                case 'smallTV':
+                    // TV stand
+                    const tvStand = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.5, 0.2, 0.3),
+                        new THREE.MeshPhongMaterial({ color: 0x444444 })
+                    );
+                    tvStand.position.y = 0.1;
+                    group.add(tvStand);
+                    
+                    // TV screen
+                    const tvScreen = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.4, 0.25, 0.05),
+                        new THREE.MeshPhongMaterial({ color: 0x111111 })
+                    );
+                    tvScreen.position.y = 0.35;
+                    group.add(tvScreen);
+                    
+                    // Screen glow
+                    const tvGlow = new THREE.Mesh(
+                        new THREE.PlaneGeometry(0.35, 0.2),
+                        new THREE.MeshBasicMaterial({ color: 0x00d4ff })
+                    );
+                    tvGlow.position.set(0, 0.35, 0.03);
+                    group.add(tvGlow);
+                    break;
+                    
+                case 'comfyChair':
+                    // Chair base
+                    const chairBase = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.35, 0.1, 0.35),
+                        new THREE.MeshPhongMaterial({ color: 0x654321 })
+                    );
+                    chairBase.position.y = 0.05;
+                    group.add(chairBase);
+                    
+                    // Chair back
+                    const chairBack = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.35, 0.4, 0.08),
+                        new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+                    );
+                    chairBack.position.set(0, 0.3, -0.15);
+                    group.add(chairBack);
+                    
+                    // Cushion
+                    const cushion = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.08, 0.3),
+                        new THREE.MeshPhongMaterial({ color: 0xff6b9d })
+                    );
+                    cushion.position.y = 0.14;
+                    group.add(cushion);
+                    break;
+                    
+                case 'coffeeTable':
+                    // Coffee table
+                    const coffeeTableTop = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.25, 0.25, 0.03, 16),
+                        new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+                    );
+                    coffeeTableTop.position.y = 0.2;
+                    group.add(coffeeTableTop);
+                    
+                    // Legs
+                    for (let i = 0; i < 3; i++) {
+                        const legAngle = (i / 3) * Math.PI * 2;
+                        const leg = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.015, 0.01, 0.2),
+                            new THREE.MeshPhongMaterial({ color: 0x654321 })
+                        );
+                        leg.position.set(
+                            Math.cos(legAngle) * 0.15,
+                            0.1,
+                            Math.sin(legAngle) * 0.15
+                        );
+                        group.add(leg);
+                    }
+                    
+                    // Coffee cup
+                    const cup = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.03, 0.025, 0.05),
+                        new THREE.MeshPhongMaterial({ color: 0xffffff })
+                    );
+                    cup.position.y = 0.24;
+                    group.add(cup);
+                    break;
+                    
+                default:
+                    return null;
+            }
+            
+            return group;
         }
         
         function updateEnvironmentUI() {
@@ -1755,7 +2053,13 @@
             
             // Update wealth score
             if (type === 'income' || type === 'gig' || type === 'investment') {
+                const oldScore = growthState.wealthScore;
                 growthState.wealthScore = Math.min(100, growthState.wealthScore + Math.floor(value / 100));
+                
+                // Check for new unlocks if score increased
+                if (growthState.wealthScore > oldScore) {
+                    checkAndUnlockItems(growthState.wealthScore);
+                }
             }
             
             document.getElementById('wealthScoreValue').textContent = growthState.wealthScore;
