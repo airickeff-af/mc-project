@@ -1334,19 +1334,206 @@
             4: { name: 'ADULT', emoji: '🎓', minScore: 0, maxScore: 100, scale: 1.0, next: 100 }
         };
         
-        // 10 Poses for Random Movement
+        // ============================================
+        // 10 ENHANCED DYNAMIC POSES FOR VRM #11318
+        // Using VRM Humanoid Bones (Blender-style rigging)
+        // ============================================
+        
+        let currentVRM = null; // Store loaded VRM
+        let walkAnimation = null; // For walking movement
+        let danceAnimation = null; // For dance rhythm
+        
         const poses = [
-            { name: 'IDLE', emoji: '🧍', rotation: { x: 0, y: 0, z: 0 }, position: { y: 0 } },
-            { name: 'WAVE', emoji: '👋', rotation: { x: 0, y: 0.5, z: 0 }, position: { y: 0.1 } },
-            { name: 'JUMP', emoji: '⬆️', rotation: { x: 0, y: -0.3, z: 0 }, position: { y: 0.3 } },
-            { name: 'SPIN', emoji: '🔄', rotation: { x: 0, y: Math.PI, z: 0 }, position: { y: 0 } },
-            { name: 'DANCE', emoji: '💃', rotation: { x: 0.1, y: 0.8, z: 0 }, position: { y: 0.1 } },
-            { name: 'SIT', emoji: '🪑', rotation: { x: -0.2, y: 0, z: 0 }, position: { y: -0.2 } },
-            { name: 'CELEBRATE', emoji: '🎉', rotation: { x: 0, y: -0.5, z: 0.1 }, position: { y: 0.2 } },
-            { name: 'STRETCH', emoji: '🙆', rotation: { x: 0.2, y: 0.3, z: 0 }, position: { y: 0.05 } },
-            { name: 'SLEEPY', emoji: '😴', rotation: { x: 0.3, y: 0, z: 0 }, position: { y: -0.1 } },
-            { name: 'EXCITED', emoji: '✨', rotation: { x: -0.1, y: 0.6, z: 0 }, position: { y: 0.15 } }
+            { 
+                name: 'IDLE', 
+                emoji: '🧍', 
+                type: 'static',
+                description: 'Stand still, breathing naturally',
+                boneRotations: {
+                    spine: { x: 0, y: 0, z: 0 },
+                    leftArm: { x: 0, y: 0, z: 0.1 },
+                    rightArm: { x: 0, y: 0, z: -0.1 }
+                }
+            },
+            { 
+                name: 'WAVE', 
+                emoji: '👋', 
+                type: 'wave',
+                description: 'Wave right hand',
+                boneRotations: {
+                    spine: { x: 0, y: 0.2, z: 0 },
+                    rightArm: { x: 0, y: 0, z: -2.5 }, // Arm up
+                    rightLowerArm: { x: 0, y: 0, z: -0.5 }
+                }
+            },
+            { 
+                name: 'WALK', 
+                emoji: '🚶', 
+                type: 'walk',
+                description: 'Walk around the room',
+                boneRotations: {
+                    spine: { x: 0.05, y: 0, z: 0 },
+                    leftLeg: { x: -0.5, y: 0, z: 0 },
+                    rightLeg: { x: 0.5, y: 0, z: 0 }
+                },
+                moveCharacter: true
+            },
+            { 
+                name: 'DANCE', 
+                emoji: '💃', 
+                type: 'dance',
+                description: 'Dance with rhythm',
+                boneRotations: {
+                    spine: { x: 0, y: 0.3, z: 0.1 },
+                    leftArm: { x: 0, y: 0, z: 1.5 },
+                    rightArm: { x: 0, y: 0, z: -1.5 },
+                    leftLeg: { x: -0.3, y: 0, z: 0 },
+                    rightLeg: { x: 0.3, y: 0, z: 0 }
+                },
+                rhythm: true
+            },
+            { 
+                name: 'JUMP', 
+                emoji: '⬆️', 
+                type: 'jump',
+                description: 'Jump up excitedly',
+                boneRotations: {
+                    spine: { x: -0.1, y: 0, z: 0 },
+                    leftArm: { x: 0, y: 0, z: 2.5 }, // Arms up
+                    rightArm: { x: 0, y: 0, z: -2.5 },
+                    leftLeg: { x: -0.8, y: 0, z: 0 },
+                    rightLeg: { x: -0.8, y: 0, z: 0 }
+                },
+                jumpHeight: 0.5
+            },
+            { 
+                name: 'SPIN', 
+                emoji: '🔄', 
+                type: 'spin',
+                description: 'Spin 360 degrees',
+                boneRotations: {
+                    spine: { x: 0, y: 0, z: 0 },
+                    leftArm: { x: 0, y: 0, z: 0.5 },
+                    rightArm: { x: 0, y: 0, z: -0.5 }
+                },
+                spin360: true
+            },
+            { 
+                name: 'SIT', 
+                emoji: '🪑', 
+                type: 'sit',
+                description: 'Sit down relaxed',
+                boneRotations: {
+                    spine: { x: -0.3, y: 0, z: 0 },
+                    leftLeg: { x: -1.5, y: 0, z: 0 },
+                    rightLeg: { x: -1.5, y: 0, z: 0 },
+                    leftArm: { x: 0, y: 0, z: 0.3 },
+                    rightArm: { x: 0, y: 0, z: -0.3 }
+                },
+                lowerCharacter: 0.3
+            },
+            { 
+                name: 'CELEBRATE', 
+                emoji: '🎉', 
+                type: 'celebrate',
+                description: 'Arms up celebrating',
+                boneRotations: {
+                    spine: { x: -0.1, y: 0, z: 0 },
+                    leftArm: { x: 0, y: 0, z: 2.8 }, // Arms way up
+                    rightArm: { x: 0, y: 0, z: -2.8 },
+                    leftLowerArm: { x: 0, y: 0, z: 0.5 },
+                    rightLowerArm: { x: 0, y: 0, z: -0.5 }
+                },
+                bounce: true
+            },
+            { 
+                name: 'STRETCH', 
+                emoji: '🙆', 
+                type: 'stretch',
+                description: 'Morning stretch',
+                boneRotations: {
+                    spine: { x: -0.2, y: 0, z: 0 },
+                    leftArm: { x: 0, y: 0, z: 2.0 },
+                    rightArm: { x: 0, y: 0, z: -2.0 },
+                    leftLowerArm: { x: 0, y: 0, z: 0.3 },
+                    rightLowerArm: { x: 0, y: 0, z: -0.3 }
+                },
+                stretch: true
+            },
+            { 
+                name: 'LOOK_AROUND', 
+                emoji: '👀', 
+                type: 'look',
+                description: 'Look around curiously',
+                boneRotations: {
+                    spine: { x: 0, y: 0.5, z: 0 },
+                    neck: { x: 0, y: 0.3, z: 0 },
+                    leftArm: { x: 0, y: 0, z: 0.2 },
+                    rightArm: { x: 0, y: 0, z: -0.2 }
+                },
+                lookAround: true
+            }
         ];
+                position: { y: 0 },
+                type: 'walk'
+            },
+            { 
+                name: 'DANCE', 
+                emoji: '💃', 
+                rotation: { x: 0, y: 0, z: 0 }, 
+                position: { y: 0 },
+                type: 'dance'
+            },
+            { 
+                name: 'JUMP', 
+                emoji: '⬆️', 
+                rotation: { x: 0, y: 0, z: 0 }, 
+                position: { y: 0 },
+                type: 'jump'
+            },
+            { 
+                name: 'SPIN', 
+                emoji: '🔄', 
+                rotation: { x: 0, y: 0, z: 0 }, 
+                position: { y: 0 },
+                type: 'spin'
+            },
+            { 
+                name: 'SIT', 
+                emoji: '🪑', 
+                rotation: { x: -0.1, y: 0, z: 0 }, 
+                position: { y: -0.35 },
+                type: 'static'
+            },
+            { 
+                name: 'CELEBRATE', 
+                emoji: '🎉', 
+                rotation: { x: -0.1, y: 0, z: 0 }, 
+                position: { y: 0.1 },
+                type: 'celebrate'
+            },
+            { 
+                name: 'STRETCH', 
+                emoji: '🙆', 
+                rotation: { x: 0.1, y: 0, z: 0 }, 
+                position: { y: 0.05 },
+                type: 'stretch'
+            },
+            { 
+                name: 'LOOK_AROUND', 
+                emoji: '👀', 
+                rotation: { x: 0, y: 0, z: 0 }, 
+                position: { y: 0 },
+                type: 'look'
+            }
+        ];
+        
+        // Animation state tracking
+        let currentAnimationType = null;
+        let animationStartTime = 0;
+        let walkPathProgress = 0;
+        let walkDirection = 1;
+        let danceBeat = 0;
         
         // Wealth Milestones for Environment
         const WEALTH_MILESTONES = [
@@ -1628,6 +1815,8 @@
             if (!character) return;
             
             const pose = poses[poseIndex];
+            currentAnimationType = pose.type;
+            animationStartTime = Date.now();
             
             // Update movement indicator
             const indicator = document.getElementById('movementIndicator');
@@ -1635,8 +1824,13 @@
                 indicator.innerHTML = `<span>${pose.emoji}</span><span>${pose.name}</span>`;
             }
             
-            // Smooth transition
-            const duration = 500;
+            // Apply VRM bone rotations if VRM is loaded
+            if (window.currentVRM && window.currentVRM.humanoid) {
+                applyVRMBoneRotations(window.currentVRM, pose);
+            }
+            
+            // Smooth transition for character root
+            const duration = 800;
             const startRot = character.rotation.clone();
             const startPos = character.position.clone();
             const startTime = Date.now();
@@ -1646,30 +1840,357 @@
                 const progress = Math.min(elapsed / duration, 1);
                 const ease = 1 - Math.pow(1 - progress, 3);
                 
-                character.rotation.x = startRot.x + (pose.rotation.x - startRot.x) * ease;
-                character.rotation.y = startRot.y + (pose.rotation.y - startRot.y) * ease;
-                character.rotation.z = startRot.z + (pose.rotation.z - startRot.z) * ease;
+                // Apply base rotation from pose
+                if (pose.boneRotations && pose.boneRotations.spine) {
+                    character.rotation.x = startRot.x + (pose.boneRotations.spine.x - startRot.x) * ease;
+                    character.rotation.y = startRot.y + (pose.boneRotations.spine.y - startRot.y) * ease;
+                    character.rotation.z = startRot.z + (pose.boneRotations.spine.z - startRot.z) * ease;
+                }
                 
-                // FIXED SCALE: No growth level scaling applied
-                character.position.y = startPos.y + (pose.position.y - startPos.y) * ease;
+                // Apply position changes
+                let targetY = startPos.y;
+                if (pose.lowerCharacter) targetY = -pose.lowerCharacter;
+                if (pose.jumpHeight) targetY = pose.jumpHeight;
+                character.position.y = startPos.y + (targetY - startPos.y) * ease;
                 
                 if (progress < 1) {
                     requestAnimationFrame(updatePose);
+                } else {
+                    // Start continuous animation for dynamic poses
+                    startPoseAnimation(pose);
                 }
             }
             
             updatePose();
         }
         
+        // Apply bone rotations to VRM humanoid
+        function applyVRMBoneRotations(vrm, pose) {
+            if (!vrm.humanoid) return;
+            
+            const humanoid = vrm.humanoid;
+            const rotations = pose.boneRotations || {};
+            
+            // Map bone names to VRM humanoid bones
+            const boneMap = {
+                spine: 'spine',
+                leftArm: 'leftUpperArm',
+                rightArm: 'rightUpperArm',
+                leftLowerArm: 'leftLowerArm',
+                rightLowerArm: 'rightLowerArm',
+                leftLeg: 'leftUpperLeg',
+                rightLeg: 'rightUpperLeg',
+                neck: 'neck'
+            };
+            
+            // Apply rotations
+            for (const [poseBone, rotation] of Object.entries(rotations)) {
+                const vrmBoneName = boneMap[poseBone];
+                if (vrmBoneName) {
+                    const bone = humanoid.getBoneNode(vrmBoneName);
+                    if (bone) {
+                        // Smoothly interpolate to target rotation
+                        const targetRot = new THREE.Euler(rotation.x, rotation.y, rotation.z);
+                        bone.rotation.x = targetRot.x;
+                        bone.rotation.y = targetRot.y;
+                        bone.rotation.z = targetRot.z;
+                    }
+                }
+            }
+        }
+        
+        // Continuous pose animations
+        function startPoseAnimation(pose) {
+            if (!character) return;
+            
+            switch(pose.type) {
+                case 'wave':
+                    animateWave();
+                    break;
+                case 'walk':
+                    animateWalk();
+                    break;
+                case 'dance':
+                    animateDance();
+                    break;
+                case 'jump':
+                    animateJump();
+                    break;
+                case 'spin':
+                    animateSpin();
+                    break;
+                case 'celebrate':
+                    animateCelebrate();
+                    break;
+                case 'stretch':
+                    animateStretch();
+                    break;
+                case 'look':
+                    animateLookAround();
+                    break;
+            }
+        }
+        
+        // 👋 WAVE - Hand waving animation
+        function animateWave() {
+            if (currentAnimationType !== 'wave' || !character) return;
+            
+            const elapsed = Date.now() - animationStartTime;
+            const waveSpeed = 0.008;
+            const waveAngle = Math.sin(elapsed * waveSpeed) * 0.3;
+            
+            // Wave body rotation
+            character.rotation.y = 0.3 + waveAngle * 0.3;
+            character.rotation.z = Math.sin(elapsed * waveSpeed * 2) * 0.05;
+            
+            // Subtle bounce
+            character.position.y = Math.abs(Math.sin(elapsed * waveSpeed * 2)) * 0.05;
+            
+            requestAnimationFrame(animateWave);
+        }
+        
+        // 🚶 WALK - Walk around environment
+        function animateWalk() {
+            if (currentAnimationType !== 'walk' || !character) return;
+            
+            const elapsed = Date.now() - animationStartTime;
+            const walkSpeed = 0.001;
+            const walkCycle = elapsed * walkSpeed;
+            
+            // Figure-8 walking path
+            const t = (walkCycle % (Math.PI * 4)) / (Math.PI * 4);
+            const pathRadius = 0.6;
+            
+            // Figure-8 parametric equations
+            const x = pathRadius * Math.sin(walkCycle * 2);
+            const z = pathRadius * Math.sin(walkCycle) * 0.5;
+            
+            // Update position
+            character.position.x = x;
+            character.position.z = z;
+            
+            // Walking bob (up and down)
+            character.position.y = Math.abs(Math.sin(walkCycle * 4)) * 0.08;
+            
+            // Face walking direction
+            const nextX = pathRadius * Math.sin((walkCycle + 0.1) * 2);
+            const nextZ = pathRadius * Math.sin(walkCycle + 0.1) * 0.5;
+            character.rotation.y = Math.atan2(nextX - x, nextZ - z);
+            
+            // Walking tilt
+            character.rotation.z = Math.sin(walkCycle * 4) * 0.05;
+            
+            requestAnimationFrame(animateWalk);
+        }
+        
+        // 💃 DANCE - Rhythmic movement
+        function animateDance() {
+            if (currentAnimationType !== 'dance' || !character) return;
+            
+            const elapsed = Date.now() - animationStartTime;
+            const bpm = 120; // Beats per minute
+            const beatDuration = 60000 / bpm;
+            const beat = (elapsed % beatDuration) / beatDuration;
+            const measure = Math.floor(elapsed / beatDuration) % 4;
+            
+            // Dance moves based on measure
+            switch(measure) {
+                case 0: // Side to side sway
+                    character.position.x = Math.sin(elapsed * 0.005) * 0.2;
+                    character.rotation.y = Math.sin(elapsed * 0.005) * 0.4;
+                    character.rotation.z = Math.sin(elapsed * 0.01) * 0.1;
+                    break;
+                case 1: // Spin with bounce
+                    character.rotation.y = elapsed * 0.003;
+                    character.position.y = Math.abs(Math.sin(elapsed * 0.008)) * 0.15;
+                    break;
+                case 2: // Hip sway
+                    character.rotation.z = Math.sin(elapsed * 0.008) * 0.15;
+                    character.position.x = Math.sin(elapsed * 0.008) * 0.15;
+                    character.scale.y = 0.4 + Math.sin(elapsed * 0.016) * 0.02;
+                    break;
+                case 3: // Jump and pose
+                    const jumpPhase = (elapsed % 1000) / 1000;
+                    if (jumpPhase < 0.3) {
+                        character.position.y = jumpPhase * 0.4;
+                    } else if (jumpPhase < 0.6) {
+                        character.position.y = 0.4 - (jumpPhase - 0.3) * 0.4;
+                    } else {
+                        character.position.y = 0;
+                        character.rotation.y = Math.sin(elapsed * 0.01) * 0.5;
+                    }
+                    break;
+            }
+            
+            // Reset scale
+            character.scale.set(0.4, 0.4, 0.4);
+            
+            requestAnimationFrame(animateDance);
+        }
+        
+        // ⬆️ JUMP - Jump up animation
+        function animateJump() {
+            if (currentAnimationType !== 'jump' || !character) return;
+            
+            const elapsed = Date.now() - animationStartTime;
+            const jumpInterval = 1500; // Jump every 1.5 seconds
+            const jumpProgress = (elapsed % jumpInterval) / jumpInterval;
+            
+            // Jump physics - parabolic arc
+            if (jumpProgress < 0.4) {
+                // Going up
+                const upProgress = jumpProgress / 0.4;
+                character.position.y = upProgress * 0.5 * (2 - upProgress); // Ease out
+                character.rotation.x = -upProgress * 0.2; // Lean forward
+            } else if (jumpProgress < 0.6) {
+                // At peak - spin!
+                const spinProgress = (jumpProgress - 0.4) / 0.2;
+                character.position.y = 0.5;
+                character.rotation.y = spinProgress * Math.PI * 2;
+                character.rotation.x = 0;
+            } else {
+                // Coming down
+                const downProgress = (jumpProgress - 0.6) / 0.4;
+                character.position.y = 0.5 * (1 - downProgress * downProgress); // Ease in
+                character.rotation.x = downProgress * 0.1; // Land
+                character.rotation.y = 0;
+            }
+            
+            // Reset rotation after jump
+            if (jumpProgress > 0.9) {
+                character.rotation.x = character.rotation.x * 0.9;
+            }
+            
+            requestAnimationFrame(animateJump);
+        }
+        
+        // 🔄 SPIN - 360 spin animation
+        function animateSpin() {
+            if (currentAnimationType !== 'spin' || !character) return;
+            
+            const elapsed = Date.now() - animationStartTime;
+            const spinSpeed = 0.004;
+            
+            // Continuous 360 rotation
+            character.rotation.y = elapsed * spinSpeed;
+            
+            // Slight tilt for dynamic feel
+            character.rotation.z = Math.sin(elapsed * 0.002) * 0.1;
+            
+            // Subtle bounce
+            character.position.y = Math.abs(Math.sin(elapsed * 0.008)) * 0.05;
+            
+            requestAnimationFrame(animateSpin);
+        }
+        
+        // 🎉 CELEBRATE - Arms up celebration
+        function animateCelebrate() {
+            if (currentAnimationType !== 'celebrate' || !character) return;
+            
+            const elapsed = Date.now() - animationStartTime;
+            const celebrateSpeed = 0.006;
+            
+            // Arms up bounce
+            const bounce = Math.abs(Math.sin(elapsed * celebrateSpeed));
+            character.position.y = 0.1 + bounce * 0.15;
+            
+            // Happy wiggle
+            character.rotation.z = Math.sin(elapsed * celebrateSpeed * 2) * 0.1;
+            character.rotation.y = Math.sin(elapsed * celebrateSpeed) * 0.3;
+            
+            // Scale pulse (excitement)
+            const pulse = 1 + Math.sin(elapsed * celebrateSpeed * 3) * 0.05;
+            character.scale.set(0.4 * pulse, 0.4 * pulse, 0.4 * pulse);
+            
+            requestAnimationFrame(animateCelebrate);
+        }
+        
+        // 🙆 STRETCH - Arms stretch animation
+        function animateStretch() {
+            if (currentAnimationType !== 'stretch' || !character) return;
+            
+            const elapsed = Date.now() - animationStartTime;
+            const stretchSpeed = 0.002;
+            const stretchPhase = (elapsed * stretchSpeed) % (Math.PI * 2);
+            
+            // Slow stretching motion
+            character.rotation.x = 0.1 + Math.sin(stretchPhase) * 0.15;
+            character.rotation.y = Math.sin(stretchPhase * 0.5) * 0.2;
+            
+            // Upward stretch
+            character.position.y = 0.05 + Math.max(0, Math.sin(stretchPhase)) * 0.1;
+            
+            // Side stretch
+            character.rotation.z = Math.sin(stretchPhase * 0.7) * 0.1;
+            
+            requestAnimationFrame(animateStretch);
+        }
+        
+        // 👀 LOOK_AROUND - Head turns
+        function animateLookAround() {
+            if (currentAnimationType !== 'look' || !character) return;
+            
+            const elapsed = Date.now() - animationStartTime;
+            const lookSpeed = 0.001;
+            
+            // Look left, center, right, center pattern
+            const lookCycle = (elapsed * lookSpeed) % 4;
+            
+            if (lookCycle < 1) {
+                // Look left
+                const t = lookCycle;
+                character.rotation.y = -0.8 * (1 - Math.pow(1 - t, 2));
+            } else if (lookCycle < 2) {
+                // Back to center
+                const t = lookCycle - 1;
+                character.rotation.y = -0.8 * (1 - t * t);
+            } else if (lookCycle < 3) {
+                // Look right
+                const t = lookCycle - 2;
+                character.rotation.y = 0.8 * (1 - Math.pow(1 - t, 2));
+            } else {
+                // Back to center
+                const t = lookCycle - 3;
+                character.rotation.y = 0.8 * (1 - t * t);
+            }
+            
+            // Subtle head tilt
+            character.rotation.z = Math.sin(elapsed * 0.002) * 0.05;
+            
+            // Slight curiosity bounce
+            character.position.y = Math.abs(Math.sin(elapsed * 0.003)) * 0.03;
+            
+            requestAnimationFrame(animateLookAround);
+        }
+        
         function startPoseRotation() {
+            // Clear any existing interval
+            if (poseInterval) {
+                clearInterval(poseInterval);
+            }
+            
             // Change pose every 10 seconds
             poseInterval = setInterval(() => {
+                // Reset position before changing pose
+                if (character) {
+                    character.position.x = 0;
+                    character.position.z = 0;
+                    character.scale.set(0.4, 0.4, 0.4);
+                }
+                
                 currentPose = (currentPose + 1) % poses.length;
                 applyPose(currentPose);
             }, 10000);
         }
         
         function randomPose() {
+            // Reset position before changing pose
+            if (character) {
+                character.position.x = 0;
+                character.position.z = 0;
+                character.scale.set(0.4, 0.4, 0.4);
+            }
+            
             currentPose = Math.floor(Math.random() * poses.length);
             applyPose(currentPose);
         }
@@ -1778,9 +2299,11 @@
         function animate() {
             requestAnimationFrame(animate);
             
-            // Idle animation
-            if (character) {
-                character.position.y += Math.sin(Date.now() * 0.002) * 0.001;
+            // Idle animation only when in IDLE pose
+            if (character && currentAnimationType === 'static' && poses[currentPose].name === 'IDLE') {
+                const elapsed = Date.now();
+                character.position.y = Math.sin(elapsed * 0.002) * 0.02;
+                character.rotation.y = Math.sin(elapsed * 0.001) * 0.05;
             }
             
             controls.update();
@@ -1807,9 +2330,16 @@
         function resetView() {
             camera.position.set(0, 1.2, 2.5);
             camera.lookAt(0, 0, 0);
+            
+            // Reset character position
             if (character) {
-                applyPose(currentPose);
+                character.position.x = 0;
+                character.position.z = 0;
+                character.scale.set(0.4, 0.4, 0.4);
+                character.rotation.set(0, 0, 0);
             }
+            
+            applyPose(currentPose);
         }
         
         // Environment System
@@ -2551,6 +3081,13 @@
                     meditationAnimation = null;
                 }
                 
+                // Reset position
+                if (character) {
+                    character.position.x = 0;
+                    character.position.z = 0;
+                    character.scale.set(0.4, 0.4, 0.4);
+                }
+                
                 // Return to previous pose or idle
                 if (preMeditationPose !== null) {
                     applyPose(preMeditationPose);
@@ -2573,6 +3110,13 @@
                 if (poseInterval) {
                     clearInterval(poseInterval);
                     poseInterval = null;
+                }
+                
+                // Reset position for meditation
+                if (character) {
+                    character.position.x = 0;
+                    character.position.z = 0;
+                    character.scale.set(0.4, 0.4, 0.4);
                 }
                 
                 // Apply meditation pose with smooth transition
