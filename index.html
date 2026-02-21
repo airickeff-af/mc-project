@@ -1139,6 +1139,7 @@
             <a href="#confessions">CONFESSIONS</a>
             <a href="#challenges">CHALLENGES</a>
             <button class="pixel-btn" onclick="toggleTheme()" style="font-size: 8px; padding: 0.5rem;">🌓 THEME</button>
+            <button class="pixel-btn" onclick="SoundFX.toggle()" style="font-size: 8px; padding: 0.5rem;">🔊 SOUND</button>
         </nav>
     </header>
 
@@ -2642,6 +2643,7 @@
         function unlockAchievement(ach) {
             unlockedAchievements.push(ach.id);
             localStorage.setItem('mc_achievements', JSON.stringify(unlockedAchievements));
+            SoundFX.play('achievement');
             showNotification(`🏆 ACHIEVEMENT: ${ach.emoji} ${ach.name}!`);
             renderAchievements();
         }
@@ -2730,6 +2732,68 @@ Keep up the great work! 🎮`;
             window.open(url, '_blank');
             showNotification('📤 OPENED TWITTER SHARE!');
         }
+
+        // P1-023: Sound Effects System
+        const SoundFX = {
+            enabled: localStorage.getItem('mc_sound') !== 'off',
+            
+            play(type) {
+                if (!this.enabled) return;
+                
+                const audio = new Audio();
+                audio.volume = 0.3;
+                
+                switch(type) {
+                    case 'click':
+                        // Simple beep using Web Audio API
+                        this.playBeep(800, 0.1);
+                        break;
+                    case 'pose':
+                        this.playBeep(600, 0.15);
+                        break;
+                    case 'achievement':
+                        this.playBeep(1000, 0.3);
+                        setTimeout(() => this.playBeep(1200, 0.3), 100);
+                        break;
+                    case 'levelup':
+                        this.playBeep(800, 0.2);
+                        setTimeout(() => this.playBeep(1000, 0.2), 100);
+                        setTimeout(() => this.playBeep(1200, 0.3), 200);
+                        break;
+                }
+            },
+            
+            playBeep(frequency, duration) {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'square';
+                
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + duration);
+            },
+            
+            toggle() {
+                this.enabled = !this.enabled;
+                localStorage.setItem('mc_sound', this.enabled ? 'on' : 'off');
+                showNotification(this.enabled ? '🔊 SOUND ON' : '🔇 SOUND OFF');
+            }
+        };
+
+        // Add sound to button clicks
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('pixel-btn')) {
+                SoundFX.play('click');
+            }
+        });
 
         function toggleFullscreen() {
             isFullscreen = !isFullscreen;
