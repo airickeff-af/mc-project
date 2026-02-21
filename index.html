@@ -232,6 +232,81 @@
             box-shadow: 1px 1px 0 #000;
         }
         
+        .pixel-btn.meditate {
+            border-color: var(--pixel-green);
+            background: rgba(78, 205, 196, 0.1);
+            color: var(--pixel-green);
+        }
+        
+        .pixel-btn.meditate:hover {
+            background: var(--pixel-green);
+            color: #000;
+        }
+        
+        .pixel-btn.meditate.active {
+            background: var(--pixel-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--pixel-green);
+        }
+        
+        .pixel-btn.holiday {
+            border-color: var(--pixel-pink);
+            background: rgba(255, 107, 157, 0.1);
+            color: var(--pixel-pink);
+        }
+        
+        .pixel-btn.holiday:hover {
+            background: var(--pixel-pink);
+            color: #000;
+        }
+        
+        /* Holiday Menu */
+        .holiday-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #2d1b4e, #1a1a2e);
+            border: 3px solid var(--pixel-pink);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            z-index: 100;
+            box-shadow: 4px 4px 0 #000;
+            display: none;
+        }
+        
+        .holiday-menu.active {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .holiday-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+        }
+        
+        .holiday-option:hover {
+            background: rgba(255, 107, 157, 0.2);
+        }
+        
+        .holiday-option.active {
+            background: var(--pixel-pink);
+            color: #000;
+        }
+        
         /* Stats Section */
         .stats-section {
             display: flex;
@@ -903,6 +978,19 @@
                 <button class="pixel-btn" onclick="toggleWireframe()">🔲 WIREFRAME</button>
                 <button class="pixel-btn" onclick="resetView()">🏠 RESET</button>
                 <button class="pixel-btn" onclick="randomPose()">🎲 POSE</button>
+                <button class="pixel-btn meditate" id="meditateBtn" onclick="toggleMeditation()">🧘 MEDITATE</button>
+                <div style="position: relative; display: inline-block;">
+                    <button class="pixel-btn holiday" id="holidayBtn" onclick="toggleHolidayMenu()">🎄 HOLIDAY</button>
+                    <div class="holiday-menu" id="holidayMenu">
+                        <div class="holiday-option" data-holiday="newyear" onclick="selectHoliday('newyear')">🎆 NEW YEAR (JAN)</div>
+                        <div class="holiday-option" data-holiday="valentine" onclick="selectHoliday('valentine')">💝 VALENTINE'S (FEB)</div>
+                        <div class="holiday-option" data-holiday="lunar" onclick="selectHoliday('lunar')">🧧 LUNAR NEW YEAR (FEB)</div>
+                        <div class="holiday-option" data-holiday="halloween" onclick="selectHoliday('halloween')">🎃 HALLOWEEN (OCT)</div>
+                        <div class="holiday-option" data-holiday="christmas" onclick="selectHoliday('christmas')">🎄 CHRISTMAS (DEC)</div>
+                        <div class="holiday-option" data-holiday="birthday" onclick="selectHoliday('birthday')">🎂 BIRTHDAY</div>
+                        <div class="holiday-option" data-holiday="none" onclick="selectHoliday('none')">❌ NO COSTUME</div>
+                    </div>
+                </div>
             </div>
             
             <!-- Growth Panel -->
@@ -1954,6 +2042,368 @@
         // Cleanup
         window.addEventListener('beforeunload', () => {
             if (poseInterval) clearInterval(poseInterval);
+        });
+        
+        // ============================================
+        // P0-011: MEDITATION SYSTEM
+        // ============================================
+        let isMeditating = false;
+        let meditationAnimation = null;
+        let preMeditationPose = null;
+        
+        // Meditation pose - cross-legged sitting
+        const meditationPose = {
+            name: 'MEDITATE',
+            emoji: '🧘',
+            rotation: { x: -0.1, y: 0, z: 0 },
+            position: { y: -0.35 }
+        };
+        
+        function toggleMeditation() {
+            const btn = document.getElementById('meditateBtn');
+            
+            if (isMeditating) {
+                // Stop meditation
+                isMeditating = false;
+                btn.classList.remove('active');
+                btn.innerHTML = '🧘 MEDITATE';
+                
+                // Clear meditation animation
+                if (meditationAnimation) {
+                    cancelAnimationFrame(meditationAnimation);
+                    meditationAnimation = null;
+                }
+                
+                // Return to previous pose or idle
+                if (preMeditationPose !== null) {
+                    applyPose(preMeditationPose);
+                } else {
+                    applyPose(0); // Return to idle
+                }
+                
+                // Resume auto pose rotation
+                startPoseRotation();
+                showNotification('🧘 MEDITATION ENDED');
+                
+            } else {
+                // Start meditation
+                isMeditating = true;
+                preMeditationPose = currentPose;
+                btn.classList.add('active');
+                btn.innerHTML = '🧘 STOP';
+                
+                // Stop auto pose rotation
+                if (poseInterval) {
+                    clearInterval(poseInterval);
+                    poseInterval = null;
+                }
+                
+                // Apply meditation pose with smooth transition
+                applyMeditationPose();
+                showNotification('🧘 MEDITATION STARTED - BREATHE...');
+            }
+        }
+        
+        function applyMeditationPose() {
+            if (!character) return;
+            
+            const duration = 1000; // 1 second transition
+            const startRot = character.rotation.clone();
+            const startPos = character.position.clone();
+            const startTime = Date.now();
+            
+            function updateMeditationPose() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                
+                character.rotation.x = startRot.x + (meditationPose.rotation.x - startRot.x) * ease;
+                character.rotation.y = startRot.y + (meditationPose.rotation.y - startRot.y) * ease;
+                character.rotation.z = startRot.z + (meditationPose.rotation.z - startRot.z) * ease;
+                
+                const scale = LEVELS[growthState.level].scale;
+                character.position.y = startPos.y + (meditationPose.position.y - startPos.y) * ease;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateMeditationPose);
+                } else {
+                    // Start breathing animation
+                    startMeditationBreathing();
+                }
+            }
+            
+            // Update indicator
+            const indicator = document.getElementById('movementIndicator');
+            if (indicator) {
+                indicator.innerHTML = `<span>${meditationPose.emoji}</span><span>${meditationPose.name}</span>`;
+            }
+            
+            updateMeditationPose();
+        }
+        
+        function startMeditationBreathing() {
+            if (!isMeditating || !character) return;
+            
+            const breatheSpeed = 0.001; // Slow breathing
+            const breatheStart = Date.now();
+            
+            function breathe() {
+                if (!isMeditating) return;
+                
+                const elapsed = Date.now() - breatheStart;
+                // Sine wave for breathing - inhale 4s, exhale 4s
+                const breatheCycle = Math.sin(elapsed * breatheSpeed);
+                
+                // Subtle scale change for breathing effect
+                const baseScale = LEVELS[growthState.level].scale * 0.4;
+                const breatheScale = baseScale + (breatheCycle * 0.02);
+                character.scale.set(breatheScale, breatheScale, breatheScale);
+                
+                // Subtle rotation for zen effect
+                character.rotation.y = Math.sin(elapsed * 0.0003) * 0.05;
+                
+                meditationAnimation = requestAnimationFrame(breathe);
+            }
+            
+            breathe();
+        }
+        
+        // ============================================
+        // P0-012: HOLIDAY COSTUME SYSTEM
+        // ============================================
+        let currentHoliday = localStorage.getItem('mc_holiday') || 'none';
+        let holidayOverlay = null;
+        
+        const holidayThemes = {
+            newyear: {
+                name: 'NEW YEAR',
+                emoji: '🎆',
+                primaryColor: '#ffd700',
+                secondaryColor: '#ff6b6b',
+                bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2a1a1a 100%)',
+                particleEmoji: '✨',
+                costumeColor: 0xffd700
+            },
+            valentine: {
+                name: 'VALENTINE\'S',
+                emoji: '💝',
+                primaryColor: '#ff6b9d',
+                secondaryColor: '#ff1744',
+                bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2a1a2a 100%)',
+                particleEmoji: '💕',
+                costumeColor: 0xff6b9d
+            },
+            lunar: {
+                name: 'LUNAR NEW YEAR',
+                emoji: '🧧',
+                primaryColor: '#ff0000',
+                secondaryColor: '#ffd700',
+                bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2a1a1a 100%)',
+                particleEmoji: '🏮',
+                costumeColor: 0xff0000
+            },
+            halloween: {
+                name: 'HALLOWEEN',
+                emoji: '🎃',
+                primaryColor: '#ff8c42',
+                secondaryColor: '#7b1fa2',
+                bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #1a0a1a 100%)',
+                particleEmoji: '🦇',
+                costumeColor: 0xff8c42
+            },
+            christmas: {
+                name: 'CHRISTMAS',
+                emoji: '🎄',
+                primaryColor: '#4caf50',
+                secondaryColor: '#d32f2f',
+                bgGradient: 'linear-gradient(135deg, #0a1a0a 0%, #1a1a2e 100%)',
+                particleEmoji: '🎅',
+                costumeColor: 0x4caf50
+            },
+            birthday: {
+                name: 'BIRTHDAY',
+                emoji: '🎂',
+                primaryColor: '#9c27b0',
+                secondaryColor: '#ffd700',
+                bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #2a1a3a 100%)',
+                particleEmoji: '🎈',
+                costumeColor: 0x9c27b0
+            },
+            none: {
+                name: 'NO COSTUME',
+                emoji: '❌',
+                primaryColor: '#00d4ff',
+                secondaryColor: '#9d4edd',
+                bgGradient: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%)',
+                particleEmoji: '',
+                costumeColor: null
+            }
+        };
+        
+        function toggleHolidayMenu() {
+            const menu = document.getElementById('holidayMenu');
+            menu.classList.toggle('active');
+            
+            // Update active state
+            document.querySelectorAll('.holiday-option').forEach(opt => {
+                opt.classList.remove('active');
+                if (opt.dataset.holiday === currentHoliday) {
+                    opt.classList.add('active');
+                }
+            });
+        }
+        
+        function selectHoliday(holiday) {
+            currentHoliday = holiday;
+            localStorage.setItem('mc_holiday', holiday);
+            
+            const theme = holidayThemes[holiday];
+            
+            // Close menu
+            document.getElementById('holidayMenu').classList.remove('active');
+            
+            // Apply holiday theme
+            applyHolidayTheme(theme);
+            
+            if (holiday !== 'none') {
+                showNotification(`${theme.emoji} ${theme.name} COSTUME EQUIPPED!`);
+            } else {
+                showNotification('❌ COSTUME REMOVED');
+            }
+        }
+        
+        function applyHolidayTheme(theme) {
+            // Update CSS variables for theme
+            document.documentElement.style.setProperty('--pixel-cyan', theme.primaryColor);
+            
+            // Update scene background
+            if (scene) {
+                scene.background = new THREE.Color(parseInt(theme.primaryColor.replace('#', '0x')) || 0x1a1a2e);
+            }
+            
+            // Apply costume color to character
+            if (character && theme.costumeColor) {
+                character.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        // Store original color if not stored
+                        if (!child.userData.originalColor) {
+                            child.userData.originalColor = child.material.color.clone();
+                        }
+                        
+                        // Apply holiday tint
+                        const holidayColor = new THREE.Color(theme.costumeColor);
+                        child.material.color.lerp(holidayColor, 0.3);
+                        child.material.emissive = holidayColor;
+                        child.material.emissiveIntensity = 0.2;
+                    }
+                });
+            } else if (character && theme.name === 'NO COSTUME') {
+                // Restore original colors
+                character.traverse((child) => {
+                    if (child.isMesh && child.material && child.userData.originalColor) {
+                        child.material.color.copy(child.userData.originalColor);
+                        child.material.emissive = new THREE.Color(0x000000);
+                        child.material.emissiveIntensity = 0;
+                    }
+                });
+            }
+            
+            // Update UI accents
+            document.querySelectorAll('.pixel-btn').forEach(btn => {
+                if (!btn.classList.contains('meditate') && !btn.classList.contains('holiday')) {
+                    btn.style.borderColor = theme.primaryColor;
+                    btn.style.color = theme.primaryColor;
+                }
+            });
+            
+            // Update progress bars
+            document.querySelectorAll('.pixel-progress-fill').forEach(bar => {
+                bar.style.background = `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})`;
+            });
+            
+            // Add floating particles for holiday
+            if (theme.particleEmoji && holiday !== 'none') {
+                addHolidayParticles(theme);
+            } else {
+                removeHolidayParticles();
+            }
+        }
+        
+        function addHolidayParticles(theme) {
+            removeHolidayParticles();
+            
+            const container = document.getElementById('character-canvas');
+            if (!container) return;
+            
+            const particleContainer = document.createElement('div');
+            particleContainer.id = 'holiday-particles';
+            particleContainer.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                overflow: hidden;
+                z-index: 10;
+            `;
+            
+            // Create floating particles
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.textContent = theme.particleEmoji;
+                particle.style.cssText = `
+                    position: absolute;
+                    font-size: ${20 + Math.random() * 20}px;
+                    left: ${Math.random() * 100}%;
+                    top: -50px;
+                    opacity: 0.6;
+                    animation: float-down ${5 + Math.random() * 5}s linear infinite;
+                    animation-delay: ${Math.random() * 5}s;
+                `;
+                particleContainer.appendChild(particle);
+            }
+            
+            // Add float animation
+            if (!document.getElementById('holiday-anim')) {
+                const style = document.createElement('style');
+                style.id = 'holiday-anim';
+                style.textContent = `
+                    @keyframes float-down {
+                        0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+                        10% { opacity: 0.6; }
+                        90% { opacity: 0.6; }
+                        100% { transform: translateY(450px) rotate(360deg); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            container.style.position = 'relative';
+            container.appendChild(particleContainer);
+        }
+        
+        function removeHolidayParticles() {
+            const existing = document.getElementById('holiday-particles');
+            if (existing) existing.remove();
+        }
+        
+        // Initialize holiday theme on load
+        if (currentHoliday && currentHoliday !== 'none') {
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    applyHolidayTheme(holidayThemes[currentHoliday]);
+                }, 1000); // Wait for character to load
+            });
+        }
+        
+        // Close holiday menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('holidayMenu');
+            const btn = document.getElementById('holidayBtn');
+            if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.remove('active');
+            }
         });
     </script>
 </body>
