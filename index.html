@@ -1324,11 +1324,11 @@
             stage: 'baby'
         };
         
-        // Level Configuration
+        // Level Configuration - FIXED SCALE (growth feature removed for VRM display)
         const LEVELS = {
-            1: { name: 'BABY', emoji: '👶', minScore: 0, maxScore: 25, scale: 0.3, next: 25 },
-            2: { name: 'CHILD', emoji: '🧒', minScore: 25, maxScore: 50, scale: 0.5, next: 50 },
-            3: { name: 'TEEN', emoji: '🧑', minScore: 50, maxScore: 75, scale: 0.75, next: 75 },
+            1: { name: 'BABY', emoji: '👶', minScore: 0, maxScore: 25, scale: 1.0, next: 25 },
+            2: { name: 'CHILD', emoji: '🧒', minScore: 25, maxScore: 50, scale: 1.0, next: 50 },
+            3: { name: 'TEEN', emoji: '🧑', minScore: 50, maxScore: 75, scale: 1.0, next: 75 },
             4: { name: 'ADULT', emoji: '🎓', minScore: 75, maxScore: 100, scale: 1.0, next: 100 }
         };
         
@@ -1453,9 +1453,8 @@
                     
                     character = gltf.scene;
                     
-                    // ALWAYS load VRM regardless of growth level - scale is applied after
-                    const scale = LEVELS[growthState.level]?.scale || 1.0;
-                    character.scale.set(0.4 * scale, 0.4 * scale, 0.4 * scale);
+                    // FIXED SCALE: VRM always loads at full scale (1.0) - growth feature removed
+                    character.scale.set(0.4, 0.4, 0.4);
                     character.position.set(0, -0.5, 0);
                     
                     // Enable shadows
@@ -1539,8 +1538,8 @@
             group.add(rightLeg);
             
             character = group;
-            const scale = LEVELS[growthState.level]?.scale || 1.0;
-            character.scale.set(0.8 * scale, 0.8 * scale, 0.8 * scale);
+            // FIXED SCALE: Fallback character also uses fixed scale (1.0)
+            character.scale.set(0.8, 0.8, 0.8);
             character.position.set(0, 0, 0);
             scene.add(character);
             
@@ -1578,7 +1577,7 @@
                 character.rotation.y = startRot.y + (pose.rotation.y - startRot.y) * ease;
                 character.rotation.z = startRot.z + (pose.rotation.z - startRot.z) * ease;
                 
-                const scale = LEVELS[growthState.level].scale;
+                // FIXED SCALE: No growth level scaling applied
                 character.position.y = startPos.y + (pose.position.y - startPos.y) * ease;
                 
                 if (progress < 1) {
@@ -2007,10 +2006,10 @@
                 }
             });
             
-            // Update character scale
+            // Update character scale - FIXED at 1.0 (growth scaling removed)
             if (character) {
-                const targetScale = LEVELS[growthState.level].scale;
-                character.scale.set(0.4 * targetScale, 0.4 * targetScale, 0.4 * targetScale);
+                // VRM now displays at full scale regardless of growth state
+                character.scale.set(0.4, 0.4, 0.4);
             }
             
             // Update environment
@@ -2425,7 +2424,7 @@
                 character.rotation.y = startRot.y + (meditationPose.rotation.y - startRot.y) * ease;
                 character.rotation.z = startRot.z + (meditationPose.rotation.z - startRot.z) * ease;
                 
-                const scale = LEVELS[growthState.level].scale;
+                // FIXED SCALE: Removed growth level scaling
                 character.position.y = startPos.y + (meditationPose.position.y - startPos.y) * ease;
                 
                 if (progress < 1) {
@@ -2458,8 +2457,8 @@
                 // Sine wave for breathing - inhale 4s, exhale 4s
                 const breatheCycle = Math.sin(elapsed * breatheSpeed);
                 
-                // Subtle scale change for breathing effect
-                const baseScale = LEVELS[growthState.level].scale * 0.4;
+                // FIXED SCALE: Breathing animation uses fixed base scale
+                const baseScale = 0.4;
                 const breatheScale = baseScale + (breatheCycle * 0.02);
                 character.scale.set(breatheScale, breatheScale, breatheScale);
                 
