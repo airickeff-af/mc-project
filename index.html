@@ -1335,205 +1335,855 @@
         };
         
         // ============================================
-        // 10 ENHANCED DYNAMIC POSES FOR VRM #11318
-        // Using VRM Humanoid Bones (Blender-style rigging)
+        // BLENDER-STYLE VRM ANIMATION SYSTEM
+        // Professional 3D animation with humanoid bones
         // ============================================
         
-        let currentVRM = null; // Store loaded VRM
-        let walkAnimation = null; // For walking movement
-        let danceAnimation = null; // For dance rhythm
+        let currentVRM = null;
+        let animationMixer = null;
+        let currentAction = null;
+        let clock = new THREE.Clock();
         
-        const poses = [
-            { 
-                name: 'IDLE', 
-                emoji: '🧍', 
-                type: 'static',
-                description: 'Stand still, breathing naturally',
-                boneRotations: {
-                    spine: { x: 0, y: 0, z: 0 },
-                    leftArm: { x: 0, y: 0, z: 0.1 },
-                    rightArm: { x: 0, y: 0, z: -0.1 }
+        // VRM Humanoid Bone Names (Unity/VRM standard)
+        const VRMBones = {
+            hips: 'hips',
+            spine: 'spine',
+            chest: 'chest',
+            neck: 'neck',
+            head: 'head',
+            leftShoulder: 'leftShoulder',
+            leftUpperArm: 'leftUpperArm',
+            leftLowerArm: 'leftLowerArm',
+            leftHand: 'leftHand',
+            rightShoulder: 'rightShoulder',
+            rightUpperArm: 'rightUpperArm',
+            rightLowerArm: 'rightLowerArm',
+            rightHand: 'rightHand',
+            leftUpperLeg: 'leftUpperLeg',
+            leftLowerLeg: 'leftLowerLeg',
+            leftFoot: 'leftFoot',
+            rightUpperLeg: 'rightUpperLeg',
+            rightLowerLeg: 'rightLowerLeg',
+            rightFoot: 'rightFoot'
+        };
+        
+        // Animation keyframe data (Blender-style)
+        const animationClips = {
+            IDLE: {
+                name: 'IDLE',
+                emoji: '🧍',
+                duration: 4,
+                loop: true,
+                keyframes: {
+                    hips: {
+                        position: [
+                            { t: 0, y: 0 },
+                            { t: 2, y: 0.02 },
+                            { t: 4, y: 0 }
+                        ],
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    spine: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 2, x: 0.02, y: 0.05, z: 0 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    chest: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 2, x: 0.03, y: -0.03, z: 0 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0.1 },
+                            { t: 2, x: 0.05, y: 0, z: 0.12 },
+                            { t: 4, x: 0, y: 0, z: 0.1 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: -0.1 },
+                            { t: 2, x: 0.05, y: 0, z: -0.12 },
+                            { t: 4, x: 0, y: 0, z: -0.1 }
+                        ]
+                    }
                 }
             },
-            { 
-                name: 'WAVE', 
-                emoji: '👋', 
-                type: 'wave',
-                description: 'Wave right hand',
-                boneRotations: {
-                    spine: { x: 0, y: 0.2, z: 0 },
-                    rightArm: { x: 0, y: 0, z: -2.5 }, // Arm up
-                    rightLowerArm: { x: 0, y: 0, z: -0.5 }
+            
+            WAVE: {
+                name: 'WAVE',
+                emoji: '👋',
+                duration: 2,
+                loop: true,
+                keyframes: {
+                    hips: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0.2, z: 0 },
+                            { t: 1, x: 0, y: -0.1, z: 0 },
+                            { t: 2, x: 0, y: 0.2, z: 0 }
+                        ]
+                    },
+                    spine: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0.1, z: 0 },
+                            { t: 1, x: 0, y: -0.05, z: 0 },
+                            { t: 2, x: 0, y: 0.1, z: 0 }
+                        ]
+                    },
+                    rightShoulder: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: -0.5 },
+                            { t: 0.5, x: 0, y: 0, z: -2.0 },
+                            { t: 1.0, x: 0, y: 0, z: -2.2 },
+                            { t: 1.5, x: 0, y: 0, z: -2.0 },
+                            { t: 2, x: 0, y: 0, z: -0.5 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.5, x: 0, y: 0, z: -0.5 },
+                            { t: 1.0, x: 0, y: 0, z: -0.3 },
+                            { t: 1.5, x: 0, y: 0, z: -0.5 },
+                            { t: 2, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    rightLowerArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.25, x: 0, y: 0, z: -0.5 },
+                            { t: 0.5, x: 0, y: 0, z: -0.3 },
+                            { t: 0.75, x: 0, y: 0, z: -0.5 },
+                            { t: 1.0, x: 0, y: 0, z: -0.3 },
+                            { t: 1.25, x: 0, y: 0, z: -0.5 },
+                            { t: 1.5, x: 0, y: 0, z: -0.3 },
+                            { t: 1.75, x: 0, y: 0, z: -0.5 },
+                            { t: 2, x: 0, y: 0, z: 0 }
+                        ]
+                    }
                 }
             },
-            { 
-                name: 'WALK', 
-                emoji: '🚶', 
-                type: 'walk',
-                description: 'Walk around the room',
-                boneRotations: {
-                    spine: { x: 0.05, y: 0, z: 0 },
-                    leftLeg: { x: -0.5, y: 0, z: 0 },
-                    rightLeg: { x: 0.5, y: 0, z: 0 }
-                },
-                moveCharacter: true
+            
+            WALK: {
+                name: 'WALK',
+                emoji: '🚶',
+                duration: 1.2,
+                loop: true,
+                rootMotion: true,
+                keyframes: {
+                    hips: {
+                        position: [
+                            { t: 0, y: 0 },
+                            { t: 0.3, y: 0.05 },
+                            { t: 0.6, y: 0 },
+                            { t: 0.9, y: 0.05 },
+                            { t: 1.2, y: 0 }
+                        ],
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.3, x: 0.02, y: 0.1, z: 0.02 },
+                            { t: 0.6, x: 0, y: 0, z: 0 },
+                            { t: 0.9, x: 0.02, y: -0.1, z: -0.02 },
+                            { t: 1.2, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperLeg: {
+                        rotation: [
+                            { t: 0, x: -0.4, y: 0, z: 0 },
+                            { t: 0.3, x: 0.3, y: 0, z: 0 },
+                            { t: 0.6, x: 0.4, y: 0, z: 0 },
+                            { t: 0.9, x: -0.1, y: 0, z: 0 },
+                            { t: 1.2, x: -0.4, y: 0, z: 0 }
+                        ]
+                    },
+                    leftLowerLeg: {
+                        rotation: [
+                            { t: 0, x: 0.1, y: 0, z: 0 },
+                            { t: 0.3, x: 0.1, y: 0, z: 0 },
+                            { t: 0.6, x: 1.2, y: 0, z: 0 },
+                            { t: 0.9, x: 0.5, y: 0, z: 0 },
+                            { t: 1.2, x: 0.1, y: 0, z: 0 }
+                        ]
+                    },
+                    rightUpperLeg: {
+                        rotation: [
+                            { t: 0, x: 0.4, y: 0, z: 0 },
+                            { t: 0.3, x: -0.1, y: 0, z: 0 },
+                            { t: 0.6, x: -0.4, y: 0, z: 0 },
+                            { t: 0.9, x: 0.3, y: 0, z: 0 },
+                            { t: 1.2, x: 0.4, y: 0, z: 0 }
+                        ]
+                    },
+                    rightLowerLeg: {
+                        rotation: [
+                            { t: 0, x: 1.2, y: 0, z: 0 },
+                            { t: 0.3, x: 0.5, y: 0, z: 0 },
+                            { t: 0.6, x: 0.1, y: 0, z: 0 },
+                            { t: 0.9, x: 0.1, y: 0, z: 0 },
+                            { t: 1.2, x: 1.2, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0.1 },
+                            { t: 0.6, x: 0, y: 0, z: -0.1 },
+                            { t: 1.2, x: 0, y: 0, z: 0.1 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: -0.1 },
+                            { t: 0.6, x: 0, y: 0, z: 0.1 },
+                            { t: 1.2, x: 0, y: 0, z: -0.1 }
+                        ]
+                    }
+                }
             },
-            { 
-                name: 'DANCE', 
-                emoji: '💃', 
-                type: 'dance',
-                description: 'Dance with rhythm',
-                boneRotations: {
-                    spine: { x: 0, y: 0.3, z: 0.1 },
-                    leftArm: { x: 0, y: 0, z: 1.5 },
-                    rightArm: { x: 0, y: 0, z: -1.5 },
-                    leftLeg: { x: -0.3, y: 0, z: 0 },
-                    rightLeg: { x: 0.3, y: 0, z: 0 }
-                },
-                rhythm: true
+            
+            DANCE: {
+                name: 'DANCE',
+                emoji: '💃',
+                duration: 3.2,
+                loop: true,
+                keyframes: {
+                    hips: {
+                        position: [
+                            { t: 0, y: 0 },
+                            { t: 0.4, y: 0.1 },
+                            { t: 0.8, y: 0 },
+                            { t: 1.2, y: 0.15 },
+                            { t: 1.6, y: 0 },
+                            { t: 2.0, y: 0.1 },
+                            { t: 2.4, y: 0 },
+                            { t: 2.8, y: 0.2 },
+                            { t: 3.2, y: 0 }
+                        ],
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.8, x: 0, y: 0.5, z: 0.1 },
+                            { t: 1.6, x: 0, y: 0, z: -0.1 },
+                            { t: 2.4, x: 0, y: -0.5, z: 0.1 },
+                            { t: 3.2, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    spine: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.8, x: 0.1, y: 0.2, z: 0.1 },
+                            { t: 1.6, x: -0.05, y: 0, z: -0.05 },
+                            { t: 2.4, x: 0.1, y: -0.2, z: 0.1 },
+                            { t: 3.2, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0.5 },
+                            { t: 0.8, x: -0.5, y: 0, z: 1.5 },
+                            { t: 1.6, x: 0, y: 0, z: 0.5 },
+                            { t: 2.4, x: -0.3, y: 0, z: 1.2 },
+                            { t: 3.2, x: 0, y: 0, z: 0.5 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: -0.5 },
+                            { t: 0.8, x: -0.3, y: 0, z: -1.2 },
+                            { t: 1.6, x: 0, y: 0, z: -0.5 },
+                            { t: 2.4, x: -0.5, y: 0, z: -1.5 },
+                            { t: 3.2, x: 0, y: 0, z: -0.5 }
+                        ]
+                    },
+                    leftUpperLeg: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.8, x: -0.3, y: 0, z: 0 },
+                            { t: 1.6, x: 0.2, y: 0, z: 0 },
+                            { t: 2.4, x: -0.4, y: 0, z: 0 },
+                            { t: 3.2, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    rightUpperLeg: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.8, x: 0.2, y: 0, z: 0 },
+                            { t: 1.6, x: -0.3, y: 0, z: 0 },
+                            { t: 2.4, x: 0.3, y: 0, z: 0 },
+                            { t: 3.2, x: 0, y: 0, z: 0 }
+                        ]
+                    }
+                }
             },
-            { 
-                name: 'JUMP', 
-                emoji: '⬆️', 
-                type: 'jump',
-                description: 'Jump up excitedly',
-                boneRotations: {
-                    spine: { x: -0.1, y: 0, z: 0 },
-                    leftArm: { x: 0, y: 0, z: 2.5 }, // Arms up
-                    rightArm: { x: 0, y: 0, z: -2.5 },
-                    leftLeg: { x: -0.8, y: 0, z: 0 },
-                    rightLeg: { x: -0.8, y: 0, z: 0 }
-                },
-                jumpHeight: 0.5
+            
+            JUMP: {
+                name: 'JUMP',
+                emoji: '⬆️',
+                duration: 1.5,
+                loop: true,
+                keyframes: {
+                    hips: {
+                        position: [
+                            { t: 0, y: 0 },
+                            { t: 0.3, y: 0.4 },
+                            { t: 0.5, y: 0.6 },
+                            { t: 0.75, y: 0.6 },
+                            { t: 1.0, y: 0.3 },
+                            { t: 1.5, y: 0 }
+                        ],
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.3, x: -0.1, y: 0, z: 0 },
+                            { t: 0.5, x: -0.2, y: 3.14, z: 0 },
+                            { t: 0.75, x: -0.2, y: 6.28, z: 0 },
+                            { t: 1.0, x: -0.1, y: 6.28, z: 0 },
+                            { t: 1.5, x: 0, y: 6.28, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.3, x: 0, y: 0, z: 2.5 },
+                            { t: 0.5, x: 0, y: 0, z: 2.8 },
+                            { t: 1.0, x: 0, y: 0, z: 2.5 },
+                            { t: 1.5, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.3, x: 0, y: 0, z: -2.5 },
+                            { t: 0.5, x: 0, y: 0, z: -2.8 },
+                            { t: 1.0, x: 0, y: 0, z: -2.5 },
+                            { t: 1.5, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperLeg: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.3, x: -0.8, y: 0, z: 0 },
+                            { t: 0.5, x: -1.0, y: 0, z: 0 },
+                            { t: 1.0, x: -0.5, y: 0, z: 0 },
+                            { t: 1.5, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    rightUpperLeg: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.3, x: -0.8, y: 0, z: 0 },
+                            { t: 0.5, x: -1.0, y: 0, z: 0 },
+                            { t: 1.0, x: -0.5, y: 0, z: 0 },
+                            { t: 1.5, x: 0, y: 0, z: 0 }
+                        ]
+                    }
+                }
             },
-            { 
-                name: 'SPIN', 
-                emoji: '🔄', 
-                type: 'spin',
-                description: 'Spin 360 degrees',
-                boneRotations: {
-                    spine: { x: 0, y: 0, z: 0 },
-                    leftArm: { x: 0, y: 0, z: 0.5 },
-                    rightArm: { x: 0, y: 0, z: -0.5 }
-                },
-                spin360: true
+            
+            SPIN: {
+                name: 'SPIN',
+                emoji: '🔄',
+                duration: 2,
+                loop: true,
+                keyframes: {
+                    hips: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 0.5, x: 0.1, y: 1.57, z: 0 },
+                            { t: 1.0, x: 0, y: 3.14, z: 0 },
+                            { t: 1.5, x: -0.1, y: 4.71, z: 0 },
+                            { t: 2, x: 0, y: 6.28, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0.3 },
+                            { t: 1, x: 0, y: 0, z: 0.5 },
+                            { t: 2, x: 0, y: 0, z: 0.3 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: -0.3 },
+                            { t: 1, x: 0, y: 0, z: -0.5 },
+                            { t: 2, x: 0, y: 0, z: -0.3 }
+                        ]
+                    }
+                }
             },
-            { 
-                name: 'SIT', 
-                emoji: '🪑', 
-                type: 'sit',
-                description: 'Sit down relaxed',
-                boneRotations: {
-                    spine: { x: -0.3, y: 0, z: 0 },
-                    leftLeg: { x: -1.5, y: 0, z: 0 },
-                    rightLeg: { x: -1.5, y: 0, z: 0 },
-                    leftArm: { x: 0, y: 0, z: 0.3 },
-                    rightArm: { x: 0, y: 0, z: -0.3 }
-                },
-                lowerCharacter: 0.3
+            
+            SIT: {
+                name: 'SIT',
+                emoji: '🪑',
+                duration: 1,
+                loop: false,
+                keyframes: {
+                    hips: {
+                        position: [
+                            { t: 0, y: 0 },
+                            { t: 1, y: -0.35 }
+                        ],
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: -0.1, y: 0, z: 0 }
+                        ]
+                    },
+                    spine: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: -0.3, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperLeg: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: -1.5, y: 0, z: 0 }
+                        ]
+                    },
+                    leftLowerLeg: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: 1.5, y: 0, z: 0 }
+                        ]
+                    },
+                    rightUpperLeg: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: -1.5, y: 0, z: 0 }
+                        ]
+                    },
+                    rightLowerLeg: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: 1.5, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: 0, y: 0, z: 0.3 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: 0, y: 0, z: -0.3 }
+                        ]
+                    }
+                }
             },
-            { 
-                name: 'CELEBRATE', 
-                emoji: '🎉', 
-                type: 'celebrate',
-                description: 'Arms up celebrating',
-                boneRotations: {
-                    spine: { x: -0.1, y: 0, z: 0 },
-                    leftArm: { x: 0, y: 0, z: 2.8 }, // Arms way up
-                    rightArm: { x: 0, y: 0, z: -2.8 },
-                    leftLowerArm: { x: 0, y: 0, z: 0.5 },
-                    rightLowerArm: { x: 0, y: 0, z: -0.5 }
-                },
-                bounce: true
+            
+            CELEBRATE: {
+                name: 'CELEBRATE',
+                emoji: '🎉',
+                duration: 1.5,
+                loop: true,
+                keyframes: {
+                    hips: {
+                        position: [
+                            { t: 0, y: 0.1 },
+                            { t: 0.375, y: 0.25 },
+                            { t: 0.75, y: 0.1 },
+                            { t: 1.125, y: 0.25 },
+                            { t: 1.5, y: 0.1 }
+                        ],
+                        rotation: [
+                            { t: 0, x: -0.1, y: 0, z: 0 },
+                            { t: 0.375, x: -0.15, y: 0.1, z: 0.05 },
+                            { t: 0.75, x: -0.1, y: 0, z: 0 },
+                            { t: 1.125, x: -0.15, y: -0.1, z: -0.05 },
+                            { t: 1.5, x: -0.1, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 2.5 },
+                            { t: 0.375, x: 0, y: 0, z: 2.8 },
+                            { t: 0.75, x: 0, y: 0, z: 2.5 },
+                            { t: 1.125, x: 0, y: 0, z: 2.8 },
+                            { t: 1.5, x: 0, y: 0, z: 2.5 }
+                        ]
+                    },
+                    leftLowerArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0.3 },
+                            { t: 0.375, x: 0, y: 0, z: 0.5 },
+                            { t: 0.75, x: 0, y: 0, z: 0.3 },
+                            { t: 1.125, x: 0, y: 0, z: 0.5 },
+                            { t: 1.5, x: 0, y: 0, z: 0.3 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: -2.5 },
+                            { t: 0.375, x: 0, y: 0, z: -2.8 },
+                            { t: 0.75, x: 0, y: 0, z: -2.5 },
+                            { t: 1.125, x: 0, y: 0, z: -2.8 },
+                            { t: 1.5, x: 0, y: 0, z: -2.5 }
+                        ]
+                    },
+                    rightLowerArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: -0.3 },
+                            { t: 0.375, x: 0, y: 0, z: -0.5 },
+                            { t: 0.75, x: 0, y: 0, z: -0.3 },
+                            { t: 1.125, x: 0, y: 0, z: -0.5 },
+                            { t: 1.5, x: 0, y: 0, z: -0.3 }
+                        ]
+                    }
+                }
             },
-            { 
-                name: 'STRETCH', 
-                emoji: '🙆', 
-                type: 'stretch',
-                description: 'Morning stretch',
-                boneRotations: {
-                    spine: { x: -0.2, y: 0, z: 0 },
-                    leftArm: { x: 0, y: 0, z: 2.0 },
-                    rightArm: { x: 0, y: 0, z: -2.0 },
-                    leftLowerArm: { x: 0, y: 0, z: 0.3 },
-                    rightLowerArm: { x: 0, y: 0, z: -0.3 }
-                },
-                stretch: true
+            
+            STRETCH: {
+                name: 'STRETCH',
+                emoji: '🙆',
+                duration: 4,
+                loop: true,
+                keyframes: {
+                    hips: {
+                        position: [
+                            { t: 0, y: 0 },
+                            { t: 2, y: 0.1 },
+                            { t: 4, y: 0 }
+                        ],
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 2, x: -0.2, y: 0, z: 0 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    spine: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 2, x: -0.3, y: 0, z: 0 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: 0, y: 0, z: 2.0 },
+                            { t: 2, x: -0.3, y: 0, z: 2.2 },
+                            { t: 3, x: 0, y: 0, z: 2.0 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: 0, y: 0, z: -2.0 },
+                            { t: 2, x: -0.3, y: 0, z: -2.2 },
+                            { t: 3, x: 0, y: 0, z: -2.0 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    leftLowerArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: 0, y: 0, z: 0.2 },
+                            { t: 2, x: 0, y: 0, z: 0.3 },
+                            { t: 3, x: 0, y: 0, z: 0.2 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    rightLowerArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1, x: 0, y: 0, z: -0.2 },
+                            { t: 2, x: 0, y: 0, z: -0.3 },
+                            { t: 3, x: 0, y: 0, z: -0.2 },
+                            { t: 4, x: 0, y: 0, z: 0 }
+                        ]
+                    }
+                }
             },
-            { 
-                name: 'LOOK_AROUND', 
-                emoji: '👀', 
-                type: 'look',
-                description: 'Look around curiously',
-                boneRotations: {
-                    spine: { x: 0, y: 0.5, z: 0 },
-                    neck: { x: 0, y: 0.3, z: 0 },
-                    leftArm: { x: 0, y: 0, z: 0.2 },
-                    rightArm: { x: 0, y: 0, z: -0.2 }
-                },
-                lookAround: true
+            
+            LOOK_AROUND: {
+                name: 'LOOK_AROUND',
+                emoji: '👀',
+                duration: 6,
+                loop: true,
+                keyframes: {
+                    hips: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1.5, x: 0, y: -0.8, z: 0 },
+                            { t: 3, x: 0, y: 0, z: 0 },
+                            { t: 4.5, x: 0, y: 0.8, z: 0 },
+                            { t: 6, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    spine: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0.2, z: 0 },
+                            { t: 1.5, x: 0, y: -0.5, z: 0 },
+                            { t: 3, x: 0, y: 0.2, z: 0 },
+                            { t: 4.5, x: 0, y: 0.9, z: 0 },
+                            { t: 6, x: 0, y: 0.2, z: 0 }
+                        ]
+                    },
+                    neck: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0 },
+                            { t: 1.5, x: 0.1, y: -0.3, z: 0 },
+                            { t: 3, x: 0, y: 0, z: 0 },
+                            { t: 4.5, x: 0.1, y: 0.3, z: 0 },
+                            { t: 6, x: 0, y: 0, z: 0 }
+                        ]
+                    },
+                    leftUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: 0.1 },
+                            { t: 3, x: 0, y: 0, z: 0.2 },
+                            { t: 6, x: 0, y: 0, z: 0.1 }
+                        ]
+                    },
+                    rightUpperArm: {
+                        rotation: [
+                            { t: 0, x: 0, y: 0, z: -0.1 },
+                            { t: 3, x: 0, y: 0, z: -0.2 },
+                            { t: 6, x: 0, y: 0, z: -0.1 }
+                        ]
+                    }
+                }
             }
-        ];
-                position: { y: 0 },
-                type: 'walk'
-            },
-            { 
-                name: 'DANCE', 
-                emoji: '💃', 
-                rotation: { x: 0, y: 0, z: 0 }, 
-                position: { y: 0 },
-                type: 'dance'
-            },
-            { 
-                name: 'JUMP', 
-                emoji: '⬆️', 
-                rotation: { x: 0, y: 0, z: 0 }, 
-                position: { y: 0 },
-                type: 'jump'
-            },
-            { 
-                name: 'SPIN', 
-                emoji: '🔄', 
-                rotation: { x: 0, y: 0, z: 0 }, 
-                position: { y: 0 },
-                type: 'spin'
-            },
-            { 
-                name: 'SIT', 
-                emoji: '🪑', 
-                rotation: { x: -0.1, y: 0, z: 0 }, 
-                position: { y: -0.35 },
-                type: 'static'
-            },
-            { 
-                name: 'CELEBRATE', 
-                emoji: '🎉', 
-                rotation: { x: -0.1, y: 0, z: 0 }, 
-                position: { y: 0.1 },
-                type: 'celebrate'
-            },
-            { 
-                name: 'STRETCH', 
-                emoji: '🙆', 
-                rotation: { x: 0.1, y: 0, z: 0 }, 
-                position: { y: 0.05 },
-                type: 'stretch'
-            },
-            { 
-                name: 'LOOK_AROUND', 
-                emoji: '👀', 
-                rotation: { x: 0, y: 0, z: 0 }, 
-                position: { y: 0 },
-                type: 'look'
-            }
-        ];
+        };
         
-        // Animation state tracking
+        // Animation state
+        
+        // ============================================
+        // BLENDER-STYLE ANIMATION FUNCTIONS
+        // Quaternion interpolation, keyframe evaluation
+        // ============================================
+        
+        // Linear interpolation between two values
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+        
+        // Cubic ease interpolation (smooth start/end)
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+        
+        // Find keyframe indices for current time
+        function findKeyframes(keyframes, currentTime) {
+            for (let i = 0; i < keyframes.length - 1; i++) {
+                if (currentTime >= keyframes[i].t && currentTime <= keyframes[i + 1].t) {
+                    return { prev: i, next: i + 1 };
+                }
+            }
+            return { prev: keyframes.length - 1, next: keyframes.length - 1 };
+        }
+        
+        // Evaluate keyframe track at given time
+        function evaluateKeyframeTrack(keyframes, currentTime, duration, loop) {
+            if (!keyframes || keyframes.length === 0) return null;
+            
+            // Handle looping
+            let t = currentTime;
+            if (loop) {
+                t = t % duration;
+            } else {
+                t = Math.min(t, duration);
+            }
+            
+            const { prev, next } = findKeyframes(keyframes, t);
+            
+            if (prev === next) {
+                return keyframes[prev];
+            }
+            
+            const prevFrame = keyframes[prev];
+            const nextFrame = keyframes[next];
+            const localT = (t - prevFrame.t) / (nextFrame.t - prevFrame.t);
+            const easedT = easeInOutCubic(localT);
+            
+            // Interpolate all properties
+            const result = { t: t };
+            for (const key of Object.keys(prevFrame)) {
+                if (key === 't') continue;
+                if (typeof prevFrame[key] === 'number') {
+                    result[key] = lerp(prevFrame[key], nextFrame[key], easedT);
+                }
+            }
+            
+            return result;
+        }
+        
+        // Apply rotation to bone using quaternion
+        function applyBoneRotation(bone, rotationData) {
+            if (!bone || !rotationData) return;
+            
+            const euler = new THREE.Euler(
+                rotationData.x || 0,
+                rotationData.y || 0,
+                rotationData.z || 0,
+                'XYZ'
+            );
+            
+            const quaternion = new THREE.Quaternion();
+            quaternion.setFromEuler(euler);
+            
+            // Blend with current rotation for smoothness
+            bone.quaternion.slerp(quaternion, 0.3);
+        }
+        
+        // Get VRM bone by name
+        function getVRMBone(vrm, boneName) {
+            if (!vrm || !vrm.humanoid) return null;
+            
+            const humanoid = vrm.humanoid;
+            
+            // Try to get bone directly
+            if (humanoid.getBoneNode) {
+                const boneEnum = THREE.VRMSchema?.HumanoidBoneName?.[boneName];
+                if (boneEnum) {
+                    return humanoid.getBoneNode(boneEnum);
+                }
+            }
+            
+            // Fallback: search through humanoid bones
+            const boneMap = {
+                'hips': 'hips',
+                'spine': 'spine',
+                'chest': 'upperChest',
+                'neck': 'neck',
+                'head': 'head',
+                'leftShoulder': 'leftShoulder',
+                'leftUpperArm': 'leftUpperArm',
+                'leftLowerArm': 'leftLowerArm',
+                'leftHand': 'leftHand',
+                'rightShoulder': 'rightShoulder',
+                'rightUpperArm': 'rightUpperArm',
+                'rightLowerArm': 'rightLowerArm',
+                'rightHand': 'rightHand',
+                'leftUpperLeg': 'leftUpperLeg',
+                'leftLowerLeg': 'leftLowerLeg',
+                'leftFoot': 'leftFoot',
+                'rightUpperLeg': 'rightUpperLeg',
+                'rightLowerLeg': 'rightLowerLeg',
+                'rightFoot': 'rightFoot'
+            };
+            
+            const vrmBoneName = boneMap[boneName];
+            if (!vrmBoneName) return null;
+            
+            // Try different VRM schema versions
+            try {
+                if (THREE.VRMSchema?.HumanoidBoneName?.[vrmBoneName]) {
+                    return humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName[vrmBoneName]);
+                }
+            } catch (e) {
+                // Fallback: try direct name
+            }
+            
+            return null;
+        }
+        
+        // Apply animation clip to VRM
+        function applyAnimationClip(vrm, clipName, elapsedTime) {
+            if (!vrm || !vrm.humanoid) return;
+            
+            const clip = animationClips[clipName];
+            if (!clip) return;
+            
+            const keyframes = clip.keyframes;
+            
+            // Apply each bone's animation
+            for (const [boneName, boneData] of Object.entries(keyframes)) {
+                const bone = getVRMBone(vrm, boneName);
+                if (!bone) continue;
+                
+                // Evaluate position if present
+                if (boneData.position) {
+                    const pos = evaluateKeyframeTrack(boneData.position, elapsedTime, clip.duration, clip.loop);
+                    if (pos) {
+                        if (pos.x !== undefined) bone.position.x = pos.x;
+                        if (pos.y !== undefined) bone.position.y = pos.y;
+                        if (pos.z !== undefined) bone.position.z = pos.z;
+                    }
+                }
+                
+                // Evaluate rotation if present
+                if (boneData.rotation) {
+                    const rot = evaluateKeyframeTrack(boneData.rotation, elapsedTime, clip.duration, clip.loop);
+                    if (rot) {
+                        applyBoneRotation(bone, rot);
+                    }
+                }
+            }
+            
+            // Update VRM
+            if (vrm.update) {
+                vrm.update(0.016); // ~60fps delta
+            }
+        }
+        
+        // Root motion for walking
+        function applyRootMotion(elapsedTime, clip) {
+            if (!clip.rootMotion || !character) return;
+            
+            const walkRadius = 0.6;
+            const walkSpeed = 0.5;
+            const angle = elapsedTime * walkSpeed;
+            
+            // Figure-8 pattern
+            const x = walkRadius * Math.sin(angle * 2);
+            const z = walkRadius * Math.sin(angle) * 0.5;
+            
+            character.position.x = x;
+            character.position.z = z;
+            
+            // Face direction of movement
+            const nextX = walkRadius * Math.sin((angle + 0.1) * 2);
+            const nextZ = walkRadius * Math.sin(angle + 0.1) * 0.5;
+            character.rotation.y = Math.atan2(nextX - x, nextZ - z);
+        }
+        
+        // Main animation update function
+        function updateAnimation() {
+            if (!isAnimating || !currentAnimationType) return;
+            
+            const clip = animationClips[currentAnimationType.toUpperCase()];
+            if (!clip) return;
+            
+            const elapsed = (Date.now() - animationStartTime) / 1000;
+            
+            // Apply VRM bone animations
+            if (window.currentVRM) {
+                applyAnimationClip(window.currentVRM, currentAnimationType.toUpperCase(), elapsed);
+            }
+            
+            // Apply root motion for walking
+            if (clip.rootMotion) {
+                applyRootMotion(elapsed, clip);
+            }
+            
+            // Continue animation loop
+            if (clip.loop || elapsed < clip.duration) {
+                requestAnimationFrame(updateAnimation);
+            } else {
+                // Animation finished, hold last pose
+                isAnimating = false;
+            }
+        }
+        
+        const poses = Object.keys(animationClips).map(key => ({
+            name: animationClips[key].name,
+            emoji: animationClips[key].emoji,
+            type: key.toLowerCase()
+        }));
+        
         let currentAnimationType = null;
         let animationStartTime = 0;
-        let walkPathProgress = 0;
-        let walkDirection = 1;
-        let danceBeat = 0;
+        let isAnimating = false;
+        let walkPathTime = 0;
+        let walkCenter = new THREE.Vector3(0, 0, 0);
         
         // Wealth Milestones for Environment
         const WEALTH_MILESTONES = [
@@ -1602,7 +2252,7 @@
             controls.maxDistance = 4;
             controls.enablePan = false;
             
-            // Load VRM
+            // Load VRM with timeout fallback
             loadVRM();
             
             // Start pose rotation
@@ -1614,103 +2264,81 @@
             // Animation loop
             animate();
             
-            // Hide loading
-            document.getElementById('loadingOverlay').classList.add('hidden');
+            // Hide loading after VRM loads (handled in loadVRM)
+            // OR timeout after 8 seconds to show fallback
+            setTimeout(() => {
+                if (!character) {
+                    console.warn('⏱️ VRM loading timeout, creating fallback...');
+                    createFallbackCharacter();
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                }
+            }, 8000);
         }
         
         function loadVRM() {
-            // Use THREE.VRM loader if available
+            // Show fallback immediately while VRM loads in background
+            console.log('🎭 Loading VRM #11318 in background...');
+            
+            // Create fallback first so user sees something immediately
+            createFallbackCharacter();
+            
+            // Try to load VRM in background
             if (typeof THREE.VRM === 'undefined') {
-                console.warn('⚠️ THREE.VRM not loaded, using GLTF fallback');
-                loadVRMWithGLTF();
+                console.warn('⚠️ THREE.VRM not loaded, keeping fallback');
+                document.getElementById('loadingOverlay').classList.add('hidden');
                 return;
             }
             
             const loader = new THREE.GLTFLoader();
             
-            // VRM URL - Meebit #11318 with CORS proxy fallback
-            const vrmUrls = [
-                'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm'),
-                'https://corsproxy.io/?' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm'),
-                'https://files.meebits.app/vrm/11318.vrm'
-            ];
+            // Use a reliable CORS proxy
+            const vrmUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm');
             
-            let currentUrlIndex = 0;
+            console.log('🔄 Loading VRM:', vrmUrl.substring(0, 50) + '...');
             
-            function tryLoadVRM() {
-                if (currentUrlIndex >= vrmUrls.length) {
-                    console.warn('⚠️ All VRM URLs failed, using fallback');
-                    createFallbackCharacter();
-                    return;
-                }
-                
-                const vrmUrl = vrmUrls[currentUrlIndex];
-                console.log('🔄 Trying VRM URL #' + (currentUrlIndex + 1) + ':', vrmUrl.substring(0, 50) + '...');
-                
-                const loadTimeout = setTimeout(() => {
-                    console.warn('⏱️ VRM loading timeout for URL #' + (currentUrlIndex + 1));
-                    currentUrlIndex++;
-                    tryLoadVRM();
-                }, 10000);
-                
-                loader.load(
-                    vrmUrl,
-                    function(gltf) {
-                        clearTimeout(loadTimeout);
-                        console.log('✅ GLTF loaded, converting to VRM...');
+            loader.load(
+                vrmUrl,
+                function(gltf) {
+                    console.log('✅ GLTF loaded, converting to VRM...');
+                    
+                    THREE.VRM.from(gltf).then((vrm) => {
+                        console.log('✅ VRM #11318 loaded!');
                         
-                        // Use THREE.VRM to convert GLTF to VRM
-                        THREE.VRM.from(gltf).then((vrm) => {
-                            console.log('✅ VRM #11318 loaded successfully!');
-                            
-                            if (character) scene.remove(character);
-                            
-                            character = vrm.scene;
-                            
-                            // FIXED SCALE
-                            character.scale.set(0.4, 0.4, 0.4);
-                            character.position.set(0, -0.5, 0);
-                            
-                            // Enable shadows
-                            character.traverse((child) => {
-                                if (child.isMesh) {
-                                    child.castShadow = true;
-                                    child.receiveShadow = true;
-                                }
-                            });
-                            
-                            scene.add(character);
-                            
-                            // Store VRM for animation
-                            window.currentVRM = vrm;
-                            
-                            // Hide loading overlay
-                            document.getElementById('loadingOverlay').classList.add('hidden');
-                            
-                            showNotification('✅ VRM #11318 LOADED!');
-                        }).catch((error) => {
-                            console.warn('⚠️ VRM conversion failed:', error);
-                            currentUrlIndex++;
-                            tryLoadVRM();
+                        // Remove fallback
+                        if (character) scene.remove(character);
+                        
+                        character = vrm.scene;
+                        character.scale.set(0.4, 0.4, 0.4);
+                        character.position.set(0, -0.5, 0);
+                        
+                        character.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
                         });
-                    },
-                    function(xhr) {
-                        if (xhr.total > 0) {
-                            const percent = Math.round((xhr.loaded / xhr.total) * 100);
-                            console.log('VRM loading: ' + percent + '%');
-                            document.querySelector('.loading-text').textContent = `LOADING VRM #11318... ${percent}%`;
-                        }
-                    },
-                    function(error) {
-                        clearTimeout(loadTimeout);
-                        console.warn('⚠️ VRM URL #' + (currentUrlIndex + 1) + ' failed:', error.message);
-                        currentUrlIndex++;
-                        tryLoadVRM();
+                        
+                        scene.add(character);
+                        window.currentVRM = vrm;
+                        
+                        showNotification('✅ VRM #11318 LOADED!');
+                    }).catch((error) => {
+                        console.warn('⚠️ VRM conversion failed, keeping fallback:', error);
+                    });
+                },
+                function(xhr) {
+                    if (xhr.total > 0) {
+                        const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                        console.log('VRM loading: ' + percent + '%');
                     }
-                );
-            }
+                },
+                function(error) {
+                    console.warn('⚠️ VRM load failed, keeping fallback:', error.message);
+                }
+            );
             
-            tryLoadVRM();
+            // Hide loading overlay immediately (fallback is showing)
+            document.getElementById('loadingOverlay').classList.add('hidden');
         }
         
         // Fallback GLTF loader without VRM conversion
@@ -1815,8 +2443,9 @@
             if (!character) return;
             
             const pose = poses[poseIndex];
-            currentAnimationType = pose.type;
+            currentAnimationType = pose.type.toUpperCase();
             animationStartTime = Date.now();
+            isAnimating = true;
             
             // Update movement indicator
             const indicator = document.getElementById('movementIndicator');
@@ -1824,344 +2453,34 @@
                 indicator.innerHTML = `<span>${pose.emoji}</span><span>${pose.name}</span>`;
             }
             
-            // Apply VRM bone rotations if VRM is loaded
-            if (window.currentVRM && window.currentVRM.humanoid) {
-                applyVRMBoneRotations(window.currentVRM, pose);
-            }
-            
-            // Smooth transition for character root
-            const duration = 800;
-            const startRot = character.rotation.clone();
-            const startPos = character.position.clone();
-            const startTime = Date.now();
-            
-            function updatePose() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 3);
-                
-                // Apply base rotation from pose
-                if (pose.boneRotations && pose.boneRotations.spine) {
-                    character.rotation.x = startRot.x + (pose.boneRotations.spine.x - startRot.x) * ease;
-                    character.rotation.y = startRot.y + (pose.boneRotations.spine.y - startRot.y) * ease;
-                    character.rotation.z = startRot.z + (pose.boneRotations.spine.z - startRot.z) * ease;
-                }
-                
-                // Apply position changes
-                let targetY = startPos.y;
-                if (pose.lowerCharacter) targetY = -pose.lowerCharacter;
-                if (pose.jumpHeight) targetY = pose.jumpHeight;
-                character.position.y = startPos.y + (targetY - startPos.y) * ease;
-                
-                if (progress < 1) {
-                    requestAnimationFrame(updatePose);
-                } else {
-                    // Start continuous animation for dynamic poses
-                    startPoseAnimation(pose);
+            // Reset character position for non-walking poses
+            const clip = animationClips[currentAnimationType];
+            if (clip && !clip.rootMotion) {
+                character.position.x = 0;
+                character.position.z = 0;
+                if (character.rotation.y > Math.PI * 2) {
+                    character.rotation.y = character.rotation.y % (Math.PI * 2);
                 }
             }
             
-            updatePose();
+            // Start animation
+            updateAnimation();
         }
         
-        // Apply bone rotations to VRM humanoid
-        function applyVRMBoneRotations(vrm, pose) {
-            if (!vrm.humanoid) return;
-            
-            const humanoid = vrm.humanoid;
-            const rotations = pose.boneRotations || {};
-            
-            // Map bone names to VRM humanoid bones
-            const boneMap = {
-                spine: 'spine',
-                leftArm: 'leftUpperArm',
-                rightArm: 'rightUpperArm',
-                leftLowerArm: 'leftLowerArm',
-                rightLowerArm: 'rightLowerArm',
-                leftLeg: 'leftUpperLeg',
-                rightLeg: 'rightUpperLeg',
-                neck: 'neck'
-            };
-            
-            // Apply rotations
-            for (const [poseBone, rotation] of Object.entries(rotations)) {
-                const vrmBoneName = boneMap[poseBone];
-                if (vrmBoneName) {
-                    const bone = humanoid.getBoneNode(vrmBoneName);
-                    if (bone) {
-                        // Smoothly interpolate to target rotation
-                        const targetRot = new THREE.Euler(rotation.x, rotation.y, rotation.z);
-                        bone.rotation.x = targetRot.x;
-                        bone.rotation.y = targetRot.y;
-                        bone.rotation.z = targetRot.z;
-                    }
-                }
-            }
-        }
-        
-        // Continuous pose animations
+        // Start continuous animation for dynamic poses
         function startPoseAnimation(pose) {
-            if (!character) return;
-            
-            switch(pose.type) {
-                case 'wave':
-                    animateWave();
-                    break;
-                case 'walk':
-                    animateWalk();
-                    break;
-                case 'dance':
-                    animateDance();
-                    break;
-                case 'jump':
-                    animateJump();
-                    break;
-                case 'spin':
-                    animateSpin();
-                    break;
-                case 'celebrate':
-                    animateCelebrate();
-                    break;
-                case 'stretch':
-                    animateStretch();
-                    break;
-                case 'look':
-                    animateLookAround();
-                    break;
-            }
+            // Animation is now handled by updateAnimation
         }
         
-        // 👋 WAVE - Hand waving animation
-        function animateWave() {
-            if (currentAnimationType !== 'wave' || !character) return;
-            
-            const elapsed = Date.now() - animationStartTime;
-            const waveSpeed = 0.008;
-            const waveAngle = Math.sin(elapsed * waveSpeed) * 0.3;
-            
-            // Wave body rotation
-            character.rotation.y = 0.3 + waveAngle * 0.3;
-            character.rotation.z = Math.sin(elapsed * waveSpeed * 2) * 0.05;
-            
-            // Subtle bounce
-            character.position.y = Math.abs(Math.sin(elapsed * waveSpeed * 2)) * 0.05;
-            
-            requestAnimationFrame(animateWave);
-        }
-        
-        // 🚶 WALK - Walk around environment
-        function animateWalk() {
-            if (currentAnimationType !== 'walk' || !character) return;
-            
-            const elapsed = Date.now() - animationStartTime;
-            const walkSpeed = 0.001;
-            const walkCycle = elapsed * walkSpeed;
-            
-            // Figure-8 walking path
-            const t = (walkCycle % (Math.PI * 4)) / (Math.PI * 4);
-            const pathRadius = 0.6;
-            
-            // Figure-8 parametric equations
-            const x = pathRadius * Math.sin(walkCycle * 2);
-            const z = pathRadius * Math.sin(walkCycle) * 0.5;
-            
-            // Update position
-            character.position.x = x;
-            character.position.z = z;
-            
-            // Walking bob (up and down)
-            character.position.y = Math.abs(Math.sin(walkCycle * 4)) * 0.08;
-            
-            // Face walking direction
-            const nextX = pathRadius * Math.sin((walkCycle + 0.1) * 2);
-            const nextZ = pathRadius * Math.sin(walkCycle + 0.1) * 0.5;
-            character.rotation.y = Math.atan2(nextX - x, nextZ - z);
-            
-            // Walking tilt
-            character.rotation.z = Math.sin(walkCycle * 4) * 0.05;
-            
-            requestAnimationFrame(animateWalk);
-        }
-        
-        // 💃 DANCE - Rhythmic movement
-        function animateDance() {
-            if (currentAnimationType !== 'dance' || !character) return;
-            
-            const elapsed = Date.now() - animationStartTime;
-            const bpm = 120; // Beats per minute
-            const beatDuration = 60000 / bpm;
-            const beat = (elapsed % beatDuration) / beatDuration;
-            const measure = Math.floor(elapsed / beatDuration) % 4;
-            
-            // Dance moves based on measure
-            switch(measure) {
-                case 0: // Side to side sway
-                    character.position.x = Math.sin(elapsed * 0.005) * 0.2;
-                    character.rotation.y = Math.sin(elapsed * 0.005) * 0.4;
-                    character.rotation.z = Math.sin(elapsed * 0.01) * 0.1;
-                    break;
-                case 1: // Spin with bounce
-                    character.rotation.y = elapsed * 0.003;
-                    character.position.y = Math.abs(Math.sin(elapsed * 0.008)) * 0.15;
-                    break;
-                case 2: // Hip sway
-                    character.rotation.z = Math.sin(elapsed * 0.008) * 0.15;
-                    character.position.x = Math.sin(elapsed * 0.008) * 0.15;
-                    character.scale.y = 0.4 + Math.sin(elapsed * 0.016) * 0.02;
-                    break;
-                case 3: // Jump and pose
-                    const jumpPhase = (elapsed % 1000) / 1000;
-                    if (jumpPhase < 0.3) {
-                        character.position.y = jumpPhase * 0.4;
-                    } else if (jumpPhase < 0.6) {
-                        character.position.y = 0.4 - (jumpPhase - 0.3) * 0.4;
-                    } else {
-                        character.position.y = 0;
-                        character.rotation.y = Math.sin(elapsed * 0.01) * 0.5;
-                    }
-                    break;
-            }
-            
-            // Reset scale
-            character.scale.set(0.4, 0.4, 0.4);
-            
-            requestAnimationFrame(animateDance);
-        }
-        
-        // ⬆️ JUMP - Jump up animation
-        function animateJump() {
-            if (currentAnimationType !== 'jump' || !character) return;
-            
-            const elapsed = Date.now() - animationStartTime;
-            const jumpInterval = 1500; // Jump every 1.5 seconds
-            const jumpProgress = (elapsed % jumpInterval) / jumpInterval;
-            
-            // Jump physics - parabolic arc
-            if (jumpProgress < 0.4) {
-                // Going up
-                const upProgress = jumpProgress / 0.4;
-                character.position.y = upProgress * 0.5 * (2 - upProgress); // Ease out
-                character.rotation.x = -upProgress * 0.2; // Lean forward
-            } else if (jumpProgress < 0.6) {
-                // At peak - spin!
-                const spinProgress = (jumpProgress - 0.4) / 0.2;
-                character.position.y = 0.5;
-                character.rotation.y = spinProgress * Math.PI * 2;
-                character.rotation.x = 0;
-            } else {
-                // Coming down
-                const downProgress = (jumpProgress - 0.6) / 0.4;
-                character.position.y = 0.5 * (1 - downProgress * downProgress); // Ease in
-                character.rotation.x = downProgress * 0.1; // Land
-                character.rotation.y = 0;
-            }
-            
-            // Reset rotation after jump
-            if (jumpProgress > 0.9) {
-                character.rotation.x = character.rotation.x * 0.9;
-            }
-            
-            requestAnimationFrame(animateJump);
-        }
-        
-        // 🔄 SPIN - 360 spin animation
-        function animateSpin() {
-            if (currentAnimationType !== 'spin' || !character) return;
-            
-            const elapsed = Date.now() - animationStartTime;
-            const spinSpeed = 0.004;
-            
-            // Continuous 360 rotation
-            character.rotation.y = elapsed * spinSpeed;
-            
-            // Slight tilt for dynamic feel
-            character.rotation.z = Math.sin(elapsed * 0.002) * 0.1;
-            
-            // Subtle bounce
-            character.position.y = Math.abs(Math.sin(elapsed * 0.008)) * 0.05;
-            
-            requestAnimationFrame(animateSpin);
-        }
-        
-        // 🎉 CELEBRATE - Arms up celebration
-        function animateCelebrate() {
-            if (currentAnimationType !== 'celebrate' || !character) return;
-            
-            const elapsed = Date.now() - animationStartTime;
-            const celebrateSpeed = 0.006;
-            
-            // Arms up bounce
-            const bounce = Math.abs(Math.sin(elapsed * celebrateSpeed));
-            character.position.y = 0.1 + bounce * 0.15;
-            
-            // Happy wiggle
-            character.rotation.z = Math.sin(elapsed * celebrateSpeed * 2) * 0.1;
-            character.rotation.y = Math.sin(elapsed * celebrateSpeed) * 0.3;
-            
-            // Scale pulse (excitement)
-            const pulse = 1 + Math.sin(elapsed * celebrateSpeed * 3) * 0.05;
-            character.scale.set(0.4 * pulse, 0.4 * pulse, 0.4 * pulse);
-            
-            requestAnimationFrame(animateCelebrate);
-        }
-        
-        // 🙆 STRETCH - Arms stretch animation
-        function animateStretch() {
-            if (currentAnimationType !== 'stretch' || !character) return;
-            
-            const elapsed = Date.now() - animationStartTime;
-            const stretchSpeed = 0.002;
-            const stretchPhase = (elapsed * stretchSpeed) % (Math.PI * 2);
-            
-            // Slow stretching motion
-            character.rotation.x = 0.1 + Math.sin(stretchPhase) * 0.15;
-            character.rotation.y = Math.sin(stretchPhase * 0.5) * 0.2;
-            
-            // Upward stretch
-            character.position.y = 0.05 + Math.max(0, Math.sin(stretchPhase)) * 0.1;
-            
-            // Side stretch
-            character.rotation.z = Math.sin(stretchPhase * 0.7) * 0.1;
-            
-            requestAnimationFrame(animateStretch);
-        }
-        
-        // 👀 LOOK_AROUND - Head turns
-        function animateLookAround() {
-            if (currentAnimationType !== 'look' || !character) return;
-            
-            const elapsed = Date.now() - animationStartTime;
-            const lookSpeed = 0.001;
-            
-            // Look left, center, right, center pattern
-            const lookCycle = (elapsed * lookSpeed) % 4;
-            
-            if (lookCycle < 1) {
-                // Look left
-                const t = lookCycle;
-                character.rotation.y = -0.8 * (1 - Math.pow(1 - t, 2));
-            } else if (lookCycle < 2) {
-                // Back to center
-                const t = lookCycle - 1;
-                character.rotation.y = -0.8 * (1 - t * t);
-            } else if (lookCycle < 3) {
-                // Look right
-                const t = lookCycle - 2;
-                character.rotation.y = 0.8 * (1 - Math.pow(1 - t, 2));
-            } else {
-                // Back to center
-                const t = lookCycle - 3;
-                character.rotation.y = 0.8 * (1 - t * t);
-            }
-            
-            // Subtle head tilt
-            character.rotation.z = Math.sin(elapsed * 0.002) * 0.05;
-            
-            // Slight curiosity bounce
-            character.position.y = Math.abs(Math.sin(elapsed * 0.003)) * 0.03;
-            
-            requestAnimationFrame(animateLookAround);
-        }
+        // Animation functions (placeholders for compatibility)
+        function animateWave() {}
+        function animateWalk() {}
+        function animateDance() {}
+        function animateJump() {}
+        function animateSpin() {}
+        function animateCelebrate() {}
+        function animateStretch() {}
+        function animateLookAround() {}
         
         function startPoseRotation() {
             // Clear any existing interval
