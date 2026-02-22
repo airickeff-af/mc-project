@@ -1172,6 +1172,8 @@
                 <button class="pixel-btn" onclick="randomPose()">🎲 POSE</button>
                 <button class="pixel-btn meditate" id="meditateBtn" onclick="toggleMeditation()">🧘 MEDITATE</button>
                 <button class="pixel-btn" onclick="exportReport()">📊 EXPORT</button>
+                <button class="pixel-btn" onclick="exportData()">💾 DATA</button>
+                <button class="pixel-btn" onclick="importData()">📥 IMPORT</button>
                 <button class="pixel-btn" onclick="shareToTwitter()">📤 SHARE</button>
                 <button class="pixel-btn" style="background: linear-gradient(135deg, #ff6b9d, #ff8fab);" onclick="toggleFullscreen()">⛶ FULLSCREEN</button>
                 <div style="position: relative; display: inline-block;">
@@ -1324,6 +1326,44 @@
             </div>
         </div>
     </div>
+
+    <!-- Stats Dashboard Section -->
+    <section class="challenge-section" id="stats">
+        <div class="challenge-header">
+            <h2 class="pixel-card-title">📊 STATS DASHBOARD</h2>
+            <button class="pixel-btn" onclick="refreshStats()">🔄 REFRESH</button>
+        </div>
+        <div id="statsContainer">
+            <div class="pixel-card" style="margin-bottom: 0.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center;">
+                    <div>
+                        <div style="font-family: var(--font-pixel); font-size: 20px; color: var(--pixel-cyan);" id="statTotalLogins">1</div>
+                        <div style="font-size: 12px; color: #888;">TOTAL LOGINS</div>
+                    </div>
+                    <div>
+                        <div style="font-family: var(--font-pixel); font-size: 20px; color: var(--pixel-green);" id="statConfessions">0</div>
+                        <div style="font-size: 12px; color: #888;">CONFESSIONS</div>
+                    </div>
+                    <div>
+                        <div style="font-family: var(--font-pixel); font-size: 20px; color: var(--pixel-gold);" id="statAchievements">0</div>
+                        <div style="font-size: 12px; color: #888;">ACHIEVEMENTS</div>
+                    </div>
+                </div>
+            </div>
+            <div class="pixel-card">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <div>
+                        <div style="font-size: 14px; color: #888; margin-bottom: 0.5rem;">AVG HEALTH</div>
+                        <div style="font-family: var(--font-pixel); font-size: 16px; color: var(--pixel-cyan);" id="statAvgHealth">78</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 14px; color: #888; margin-bottom: 0.5rem;">AVG WEALTH</div>
+                        <div style="font-family: var(--font-pixel); font-size: 16px; color: var(--pixel-cyan);" id="statAvgWealth">65</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Confession Section -->
     <section class="confession-section" id="confessions">
@@ -2703,6 +2743,74 @@
 
         // Export Report (P1-032 alternative)
 
+        // P1-038: Stats Dashboard
+        function refreshStats() {
+            document.getElementById('statTotalLogins').textContent = parseInt(localStorage.getItem('mc_total_logins') || '1');
+            document.getElementById('statConfessions').textContent = confessions.length;
+            document.getElementById('statAchievements').textContent = unlockedAchievements.length;
+            document.getElementById('statAvgHealth').textContent = growthState.healthScore;
+            document.getElementById('statAvgWealth').textContent = growthState.wealthScore;
+            showNotification('📊 STATS REFRESHED!');
+        }
+
+        // Track logins
+        const totalLogins = parseInt(localStorage.getItem('mc_total_logins') || '0') + 1;
+        localStorage.setItem('mc_total_logins', totalLogins.toString());
+
+        // P1-037: Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    randomPose();
+                    break;
+                case 'm':
+                case 'M':
+                    toggleMeditation();
+                    break;
+                case 'f':
+                case 'F':
+                    toggleFullscreen();
+                    break;
+                case 'r':
+                case 'R':
+                    resetView();
+                    break;
+                case 't':
+                case 'T':
+                    toggleTheme();
+                    break;
+                case 's':
+                case 'S':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        shareToTwitter();
+                    }
+                    break;
+                case '?':
+                    showNotification('⌨️ SPACE=Pose | M=Meditate | F=Fullscreen | R=Reset | T=Theme | Ctrl+S=Share');
+                    break;
+            }
+        });
+
+        // P1-037: Keyboard shortcuts help
+        function showKeyboardHelp() {
+            const help = `
+🎮 KEYBOARD SHORTCUTS:
+
+SPACE - Random pose
+M - Toggle meditation
+F - Toggle fullscreen
+R - Reset view
+T - Toggle theme
+Ctrl+S - Share to Twitter
+? - Show this help
+            `;
+            alert(help);
+        }
+
         // P1-022: Initialize Hammer.js touch gestures
         function initTouchGestures() {
             const canvas = document.getElementById('character-canvas');
@@ -2797,6 +2905,64 @@ Keep up the great work! 🎮`;
             a.click();
             URL.revokeObjectURL(url);
             showNotification('📊 REPORT DOWNLOADED!');
+        }
+
+        // P1-035: Export all user data
+        function exportData() {
+            const data = {
+                character: growthState,
+                achievements: unlockedAchievements,
+                confessions: confessions,
+                challenges: challenges,
+                streak: JSON.parse(localStorage.getItem('mc_streak') || '{}'),
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mc-project-data-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('💾 DATA EXPORTED!');
+        }
+
+        // P1-036: Import user data
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        
+                        // Restore data
+                        if (data.character) Object.assign(growthState, data.character);
+                        if (data.achievements) unlockedAchievements.splice(0, unlockedAchievements.length, ...data.achievements);
+                        if (data.confessions) confessions.splice(0, confessions.length, ...data.confessions);
+                        if (data.challenges) challenges.splice(0, challenges.length, ...data.challenges);
+                        if (data.streak) localStorage.setItem('mc_streak', JSON.stringify(data.streak));
+                        
+                        // Refresh UI
+                        updateGrowth();
+                        renderAchievements();
+                        renderConfessions();
+                        renderChallenges();
+                        
+                        showNotification('📥 DATA IMPORTED!');
+                    } catch (err) {
+                        showNotification('❌ INVALID FILE');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         }
 
         // P1-025: Social Sharing with Screenshot
