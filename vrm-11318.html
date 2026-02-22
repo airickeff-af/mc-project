@@ -224,8 +224,22 @@
 
             animate();
 
-            // Try loading VRM
-            loadVRM();
+            // Try loading VRM with timeout
+            loadVRMWithTimeout();
+        }
+        
+        function loadVRMWithTimeout() {
+            // Show fallback immediately
+            createFallback();
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('pose-controls').style.display = 'flex';
+            log('Fallback character loaded instantly', 'success');
+            
+            // Try loading real VRM in background
+            setTimeout(() => {
+                log('Trying to load VRM #11318 in background...', 'info');
+                loadVRM();
+            }, 100);
         }
 
         function loadVRM(useCORS = false) {
@@ -263,6 +277,9 @@
                 loader.load(
                     path,
                     (gltf) => {
+                        // Only replace if we successfully loaded
+                        if (character) scene.remove(character);
+                        
                         log(`✅ SUCCESS! VRM loaded from path ${pathIndex + 1}`, 'success');
 
                         character = gltf.scene;
@@ -286,15 +303,10 @@
                         // Extract parts for animation
                         extractParts();
                         
-                        // Show pose controls
-                        document.getElementById('pose-controls').style.display = 'flex';
-                        log('Pose buttons activated!', 'success');
+                        log('VRM #11318 replaced fallback! Scale: ' + scale.toFixed(2) + 'x', 'success');
                         
                         // Center camera
                         controls.target.set(0, 1, 0);
-
-                        document.getElementById('loading').style.display = 'none';
-                        log(`VRM #11318 displayed! Scale: ${scale.toFixed(2)}x`, 'success');
                     },
                     (xhr) => {
                         const pct = Math.round((xhr.loaded / xhr.total) * 100);
