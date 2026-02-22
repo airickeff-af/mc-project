@@ -1126,6 +1126,21 @@
     </style>
 </head>
 <body>
+    <!-- Tutorial Overlay -->
+    <div class="loading-overlay" id="tutorialOverlay" style="display: none; background: rgba(0,0,0,0.9);">
+        <div style="text-align: center; max-width: 600px; padding: 2rem;">
+            <h2 style="font-family: var(--font-pixel); font-size: 16px; color: var(--pixel-cyan); margin-bottom: 1rem;">🎮 WELCOME TO MC PROJECT</h2>
+            <div style="text-align: left; margin: 2rem 0; line-height: 1.8;">
+                <p>👤 <strong>Character:</strong> View your VRM avatar with 5 poses</p>
+                <p>❤️ <strong>Health:</strong> Track exercise, sleep, meals</p>
+                <p>💰 <strong>Wealth:</strong> Monitor savings, investments</p>
+                <p>🏆 <strong>Achievements:</strong> Unlock badges as you progress</p>
+                <p>📢 <strong>Confessions:</strong> Share anonymously</p>
+            </div>
+            <button class="pixel-btn" onclick="dismissTutorial()" style="font-size: 12px; padding: 1rem 2rem;">GET STARTED</button>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="pixel-spinner"></div>
@@ -1604,6 +1619,7 @@
                     <option value="30">30 DAYS</option>
                 </select>
                 <button onclick="createChallenge()" class="pixel-btn primary" style="width: 100%;">CREATE CHALLENGE</button>
+                <button onclick="copyChallengeLink()" class="pixel-btn" style="width: 100%; margin-top: 0.5rem;">📋 COPY INVITE LINK</button>
             </div>
         </div>
     </div>
@@ -2854,6 +2870,52 @@ Ctrl+S - Share to Twitter
         // FULLSCREEN MODE
         let isFullscreen = false;
 
+        // P1-042: Tutorial system
+        function showTutorial() {
+            if (!localStorage.getItem('mc_tutorial_seen')) {
+                document.getElementById('tutorialOverlay').style.display = 'flex';
+            }
+        }
+
+        function dismissTutorial() {
+            document.getElementById('tutorialOverlay').style.display = 'none';
+            localStorage.setItem('mc_tutorial_seen', 'true');
+        }
+
+        // P1-041: Copy challenge invite link
+        function copyChallengeLink() {
+            const link = `https://airickeff-af.github.io/mc-project/?ref=${currentUser}`;
+            navigator.clipboard.writeText(link).then(() => {
+                showNotification('📋 INVITE LINK COPIED!');
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = link;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showNotification('📋 INVITE LINK COPIED!');
+            });
+        }
+
+        // P1-040: Auto dark mode based on time
+        function checkAutoTheme() {
+            const hour = new Date().getHours();
+            const isDark = hour < 6 || hour >= 18; // Dark 6PM - 6AM
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            
+            if (isDark && currentTheme === 'light') {
+                toggleTheme();
+            } else if (!isDark && currentTheme === 'dark') {
+                toggleTheme();
+            }
+        }
+
+        // Check theme every hour
+        setInterval(checkAutoTheme, 3600000);
+        checkAutoTheme(); // Check on load
+
         // P1-026: Browser Notifications
         function requestNotificationPermission() {
             if ('Notification' in window) {
@@ -3866,11 +3928,26 @@ Keep up the great work! 🎮`;
                                 <button class="action-btn ${hasLiked ? 'liked' : ''}" onclick="toggleLike('${confession.id}')">
                                     ${hasLiked ? '❤️' : '🤍'} ${confession.likes}
                                 </button>
+                                <button class="action-btn" onclick="addReaction('${confession.id}', '🔥')">🔥</button>
+                                <button class="action-btn" onclick="addReaction('${confession.id}', '😂')">😂</button>
+                                <button class="action-btn" onclick="addReaction('${confession.id}', '😮')">😮</button>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // P1-039: Confession reactions
+        let confessionReactions = JSON.parse(localStorage.getItem('mc_confession_reactions') || '{}');
+
+        function addReaction(confessionId, emoji) {
+            const key = `${confessionId}_${emoji}`;
+            if (!confessionReactions[key]) confessionReactions[key] = 0;
+            confessionReactions[key]++;
+            localStorage.setItem('mc_confession_reactions', JSON.stringify(confessionReactions));
+            showNotification(`${emoji} REACTION ADDED!`);
+            renderConfessions();
         }
 
         // Challenge System
@@ -4048,6 +4125,8 @@ Keep up the great work! 🎮`;
             checkAchievements();
             renderAchievements();
             requestNotificationPermission();
+            refreshStats();
+            showTutorial();
         });
 
         window.addEventListener('resize', () => {
