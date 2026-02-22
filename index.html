@@ -14,6 +14,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
@@ -135,7 +139,50 @@
             padding: 2rem;
         }
 
+        /* Mobile Navigation Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            font-size: 20px;
+            background: none;
+            border: 2px solid var(--pixel-cyan);
+            color: var(--pixel-cyan);
+            padding: 0.5rem;
+            cursor: pointer;
+            font-family: var(--font-pixel);
+        }
+
         @media (max-width: 900px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .pixel-nav {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--pixel-dark);
+                flex-direction: column;
+                padding: 1rem;
+                border-bottom: 4px solid var(--pixel-cyan);
+                transform: translateY(-100%);
+                opacity: 0;
+                pointer-events: none;
+                transition: all 0.3s;
+                z-index: 1000;
+            }
+
+            .pixel-nav.active {
+                transform: translateY(0);
+                opacity: 1;
+                pointer-events: all;
+            }
+
+            .pixel-nav a, .pixel-nav button {
+                width: 100%;
+                text-align: center;
+                margin: 0.25rem 0;
+            }
             .main-container {
                 grid-template-columns: 1fr;
             }
@@ -487,8 +534,9 @@
 
         .pixel-card:hover {
             border-color: var(--pixel-cyan);
-            transform: translate(-2px, -2px);
-            box-shadow: 10px 10px 0 #000;
+            transform: translate(-4px, -4px) scale(1.02);
+            box-shadow: 12px 12px 0 #000, 0 0 30px rgba(0, 212, 255, 0.3);
+            z-index: 10;
         }
 
         .pixel-card:active {
@@ -1150,7 +1198,8 @@
     <!-- Pixel Header -->
     <header class="pixel-header">
         <div class="pixel-logo">MC PROJECT</div>
-        <nav class="pixel-nav">
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰ MENU</button>
+        <nav class="pixel-nav" id="mainNav">
             <a href="#character" class="active">CHARACTER</a>
             <a href="#health">HEALTH</a>
             <a href="#wealth">WEALTH</a>
@@ -2785,6 +2834,19 @@
         // Track logins
         const totalLogins = parseInt(localStorage.getItem('mc_total_logins') || '0') + 1;
         localStorage.setItem('mc_total_logins', totalLogins.toString());
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const nav = document.getElementById('mainNav');
+            nav.classList.toggle('active');
+        }
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('.pixel-nav a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('mainNav').classList.remove('active');
+            });
+        });
 
         // P1-043: Easter eggs
         const easterEggs = {
