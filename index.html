@@ -2551,11 +2551,13 @@
 
             const loader = new THREE.GLTFLoader();
 
-            // Multiple CORS proxies to try
+            // Try local file first, then CORS proxies
             const vrmUrls = [
+                'assets/character.vrm', // Local file first
+                './assets/character.vrm',
+                'https://airickeff-af.github.io/mc-project/assets/character.vrm',
                 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm'),
-                'https://corsproxy.io/?' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm'),
-                'https://files.meebits.app/vrm/11318.vrm' // Direct as last resort
+                'https://corsproxy.io/?' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm')
             ];
 
             let urlIndex = 0;
@@ -2640,9 +2642,11 @@
         function loadVRMWithGLTF() {
             const loader = new THREE.GLTFLoader();
             const vrmUrls = [
+                'assets/character.vrm',
+                './assets/character.vrm',
+                'https://airickeff-af.github.io/mc-project/assets/character.vrm',
                 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm'),
-                'https://corsproxy.io/?' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm'),
-                'https://files.meebits.app/vrm/11318.vrm'
+                'https://corsproxy.io/?' + encodeURIComponent('https://files.meebits.app/vrm/11318.vrm')
             ];
 
             let urlIndex = 0;

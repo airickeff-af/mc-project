@@ -198,16 +198,18 @@
         function loadVRM(useCORS = false) {
             const loader = new THREE.GLTFLoader();
             
-            // VRM paths to try
-            const paths = useCORS ? [
-                'https://corsproxy.io/?https://files.meebits.app/vrm/11318.vrm',
-                'https://api.allorigins.win/raw?url=https://files.meebits.app/vrm/11318.vrm'
-            ] : [
+            // VRM paths to try - prioritize working paths
+            const paths = [
+                'https://airickeff-af.github.io/mc-project/assets/character.vrm',
                 './assets/character.vrm',
                 'assets/character.vrm',
-                '/mc-project/assets/character.vrm',
-                'https://files.meebits.app/vrm/11318.vrm'
+                '/mc-project/assets/character.vrm'
             ];
+            
+            if (useCORS) {
+                paths.push('https://corsproxy.io/?https://files.meebits.app/vrm/11318.vrm');
+                paths.push('https://api.allorigins.win/raw?url=https://files.meebits.app/vrm/11318.vrm');
+            }
             
             let pathIndex = 0;
             
