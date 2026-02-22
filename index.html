@@ -1287,20 +1287,30 @@
         <section class="viewer-section" id="character">
             <h2 class="viewer-title">👤 YOUR CHARACTER</h2>
             <div style="position: relative;">
-                <!-- Simple 3D Character Canvas -->
-                <div id="character-canvas" style="width: 100%; height: 500px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; display: flex; justify-content: center; align-items: center;"
-                    onclick="window.open('vrm-11318.html', '_blank')">
-                    <div style="text-align: center; cursor: pointer;">
+                <!-- 3D Character Container -->
+                <div id="character-container" style="width: 100%; height: 500px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; display: flex; justify-content: center; align-items: center;">
+                    <!-- Initial Click to Load -->
+                    <div id="character-placeholder" style="text-align: center; cursor: pointer;" onclick="loadVRMInIframe()">
                         <div style="font-size: 120px; margin-bottom: 20px;">👤</div>
-                        <p style="color: #4ecdc4; font-family: 'Press Start 2P', cursive; font-size: 14px;">Click to View 3D Character</p>
+                        <p style="color: #4ecdc4; font-family: 'Press Start 2P', cursive; font-size: 14px;">Click to Load 3D Character</p>
                         <p style="color: #888; font-size: 12px; margin-top: 10px;">VRM #11318 with Pose Controls</p>
                     </div>
+                    <!-- Iframe for VRM (hidden initially) -->
+                    <iframe id="vrm-iframe" src="" style="width: 100%; height: 100%; border: none; border-radius: 12px; display: none;"></iframe>
                 </div>
                 <div class="character-overlay">
                     <div class="level-badge">LVL <span id="currentLevel">4</span></div>
                     <div class="stage-label" id="stageLabel">🎓 ADULT</div>
                 </div>
             </div>
+            
+            <script>
+                function loadVRMInIframe() {
+                    document.getElementById('character-placeholder').style.display = 'none';
+                    document.getElementById('vrm-iframe').style.display = 'block';
+                    document.getElementById('vrm-iframe').src = 'vrm-11318.html';
+                }
+            </script>
             <div class="viewer-controls">
                 <button class="pixel-btn" onclick="rotateCharacter()">🔄 ROTATE</button>
                 <button class="pixel-btn" onclick="toggleWireframe()">🔲 WIREFRAME</button>
