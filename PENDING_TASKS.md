@@ -56,13 +56,13 @@
 | ID | Task | Description | Status | Owner | Time |
 |----|------|-------------|--------|-------|------|
 | P1-001 | Anonymous Confessions | Daily confession posting system | ✅ DONE | Code-MC | 3h |
-| P1-002 | Visual Feedback | Animations, transitions, effects | ⏳ PENDING | Pixel-MC | 2h |
-| P1-003 | Mobile + PWA | Responsive design, app-like experience | ⏳ PENDING | Forge-MC | 4h |
-| P1-004 | Testing + Bug Fixes | QA, edge cases, performance | ⏳ PENDING | Sentry-MC | 3h |
-| P1-005 | Documentation | User guides, API docs | ⏳ PENDING | Quill-MC | 2h |
-| P1-006 | Education Edition | Learning mode for students | ⏳ PENDING | Quill-MC | 4h |
+| P1-002 | Visual Feedback | Animations, transitions, effects | 🔴 RESET | Nexus | 2h |
+| P1-003 | Mobile + PWA | Responsive design, app-like experience | 🔴 RESET | Nexus | 4h |
+| P1-004 | Testing + Bug Fixes | QA, edge cases, performance | 🔴 RESET | Nexus | 3h |
+| P1-005 | Documentation | User guides, API docs | 🔴 RESET | Nexus | 2h |
+| P1-006 | Education Edition | Learning mode for students | 🔴 RESET | Nexus | 4h |
 | P1-007 | Daily Streak Counter | Track consecutive days | ✅ DONE | Code-MC | 2h |
-| P1-008 | Weekly Report Email | Auto-email summaries | ⏳ PENDING | Sentry-MC | 2h |
+| P1-008 | Weekly Report Email | Auto-email summaries | 🔴 RESET | Nexus | 2h |
 | P1-009 | Friend Comparison | Compare stats with friends | ✅ DONE | Code-MC | 3h |
 | P1-011 | Dark/Light Mode | Theme toggle | ✅ DONE | Code-MC | 1h |
 | P1-012 | Daily Confession Sharing | Anonymous posts with likes | ✅ DONE | Code-MC | 3h |
@@ -73,7 +73,7 @@
 | P1-017 | Social Sharing | Share to Twitter/X, Instagram | ✅ DONE | Code-MC | 1.5h |
 | P1-018 | Daily Quiz | Health/finance questions | ✅ DONE | Code-MC | 2h |
 | P1-019 | Virtual Pet Companion | Reactive pet based on stats | ⏳ PENDING | Pixel-MC | 4h |
-| P1-020 | Weekly Report Card | Grade your week (A-F) | ⏳ PENDING | Code-MC | 2h |
+| P1-020 | Weekly Report Card | Grade your week (A-F) | 🔴 RESET | Nexus | 2h |
 | P1-021 | Seasonal Events | Limited-time challenges | ⏳ PENDING | Sentry-MC | 3h |
 
 ### NEW P1 Tasks (Created Feb 21)
